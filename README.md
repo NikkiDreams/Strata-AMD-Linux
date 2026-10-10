@@ -1,5 +1,7 @@
 <h1 align="center">Strata</h1>
 
+<h2>This is an experimantal AMD Linux only fork. You probably should not use this fork. Stick with the original unless you are experimenting like me.</h2>
+
 <p align="center"><b>Run a 125-billion-parameter AI model on your own gaming PC</b><br>
 AMD graphics card (12 GB or more) · Linux · free and open source</p>
 
@@ -21,11 +23,11 @@ We measured it on an ordinary gaming PC. A token is about ¾ of a word.
 
 **AMD: RX 9070 XT (16 GB), Ryzen 9 3900X, 47 GB RAM**
 
-| Size | Writes answers | Reads your prompt |
-| --- | ---: | ---: |
-| **Q2_0** | 60 tokens/s | 1,160 tokens/s |
-| **IQ2_XS** | 52 tokens/s | 1,110 tokens/s |
-| **Coder** | 44 tokens/s | 1,420 tokens/s |
+| Size       | Writes answers | Reads your prompt |
+| ---------- | -------------: | ----------------: |
+| **Q2_0**   |    60 tokens/s |    1,160 tokens/s |
+| **IQ2_XS** |    52 tokens/s |    1,110 tokens/s |
+| **Coder**  |    44 tokens/s |    1,420 tokens/s |
 
 4K answers, 32K prompts. The full tables, with the engine each row was measured on, are in
 [DETAILS.md](docs/DETAILS.md#speed-measured). A card with more VRAM is faster. Long chats and other cards:
@@ -36,12 +38,12 @@ We measured it on an ordinary gaming PC. A token is about ¾ of a word.
 
 ## What you need
 
-| | |
-| --- | --- |
+|                   |                                                                                                                                                                                                                                                         |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Graphics card** | **AMD** Radeon RX 7900 XT / XTX, RX 7800 XT / 7700 XT, RX 9060 XT, RX 9070 / 9070 XT, Radeon AI PRO R9700 or RX 6800 / 6900 series. It needs **12 GB of VRAM or more**. An NVIDIA card is not supported by this fork: setup stops with a plain message. |
-| **RAM** | 32 GB or more. Your RAM decides [which model](#which-model-should-i-pick) fits. 64 GB runs every size. |
-| **Disk** | About 80 GB free. Use an SSD if you can: the first start is much faster. |
-| **System** | Linux, with the kernel's amdgpu driver. Windows is not supported by this fork. |
+| **RAM**           | 32 GB or more. Your RAM decides [which model](#which-model-should-i-pick) fits. 64 GB runs every size.                                                                                                                                                  |
+| **Disk**          | About 80 GB free. Use an SSD if you can: the first start is much faster.                                                                                                                                                                                |
+| **System**        | Linux, with the kernel's amdgpu driver. Windows is not supported by this fork.                                                                                                                                                                          |
 
 The installer sets up everything else, and compiles the engine for your card (10-20 minutes, once). Two or three cards
 can share the model ([multi-GPU](docs/MULTI_GPU.md)).
@@ -96,12 +98,12 @@ option: [docs/INSTALL.md](docs/INSTALL.md).
 The installer recommends one for your RAM. The same model comes in several sizes, compressed more or less. Smaller
 sizes are faster. Larger sizes are a bit smarter.
 
-| Your RAM | Take | Why |
-| --- | --- | --- |
-| **32 GB** | **Coder** | it fits 32 GB, and it is made for code (with a 24 GB card, Q2_0 and IQ2_XS run too) |
-| **48 GB** | **IQ2_XS** (or Q2_0, the fastest) | the larger sizes do not fit |
-| **64 GB** | **IQ2_XS** (recommended), or IQ3_XXS / IQ3_S | every size fits; IQ3_S is the best and the slowest |
-| **96 GB or more** | **IQ3_S**, or Unsloth's UD-IQ4_XS (~4-bit) | room for the largest sizes with everything else open |
+| Your RAM          | Take                                         | Why                                                                                 |
+| ----------------- | -------------------------------------------- | ----------------------------------------------------------------------------------- |
+| **32 GB**         | **Coder**                                    | it fits 32 GB, and it is made for code (with a 24 GB card, Q2_0 and IQ2_XS run too) |
+| **48 GB**         | **IQ2_XS** (or Q2_0, the fastest)            | the larger sizes do not fit                                                         |
+| **64 GB**         | **IQ2_XS** (recommended), or IQ3_XXS / IQ3_S | every size fits; IQ3_S is the best and the slowest                                  |
+| **96 GB or more** | **IQ3_S**, or Unsloth's UD-IQ4_XS (~4-bit)   | room for the largest sizes with everything else open                                |
 
 - **[Coder](docs/MODELS.md#coder):** a coding version with half of the experts removed. It reaches 91% of the full
   model's SWE-bench Verified score (measured by its authors) and fits 32 GB of RAM. It is weaker outside code,
