@@ -1,7 +1,7 @@
 """The owner's rule for setup (#403 #406 #364 #384): setup RECOMMENDS, it never forces - and the recommended answers
-stay exactly what they were.  setup.main() with --yes (and with Enter for every question) on a few PCs writes the same
-run config, byte for byte, as 0.1.32 plus the fixes on top of it did (tools/test_setup_golden.json, written by that
-setup).  Every outside effect is mocked: no GPU, no downloads, nothing written outside a temp folder.
+stay exactly what they were.  setup.main() with --yes (and with Enter for every question) on a few PCs with AMD cards
+writes the same run config, byte for byte, as the last recorded baseline (tools/test_setup_golden.json, written by this
+setup on the AMD path).  Every outside effect is mocked: no GPU, no downloads, nothing written outside a temp folder.
 
     python -m unittest tools.test_setup_golden
     python tools/test_setup_golden.py --write      (only to record a new baseline on purpose)
@@ -24,22 +24,23 @@ sys.path.insert(0, str(ROOT))
 import setup  # noqa: E402
 
 GOLDEN = Path(__file__).with_name("test_setup_golden.json")
+SOURCE_VER = setup.source_ver()          # the engine this source tree builds (ROOT is patched to a temp folder below)
 
 
 def card(i, name, vram, arch):
-    return {"index": i, "name": name, "vram_gb": vram, "arch": arch, "driver": "580.97"}
+    return {"index": i, "name": name, "vram_gb": vram, "arch": arch}
 
 
-# the PCs: total RAM as ram_gb() reads it (a little under the label), the cards as nvidia-smi lists them
+# the PCs: total RAM as ram_gb() reads it (a little under the label), the cards as setup's KFD list shows them
 PROFILES = {
-    "64GB-1x32GB": (63.7, [card(0, "NVIDIA GeForce RTX 5090", 31.8, "120")]),                  # #406
-    "32GB-2x24GB": (31.9, [card(i, "NVIDIA GeForce RTX 3090", 24.0, "86") for i in range(2)]),  # #364
-    "47GB-2x16GB": (47.0, [card(i, "NVIDIA GeForce RTX 5060 Ti", 15.9, "120") for i in range(2)]),   # #384
-    "96GB-1x16GB": (95.8, [card(0, "NVIDIA GeForce RTX 5080", 15.9, "120")]),
-    "128GB-1x24GB": (127.8, [card(0, "NVIDIA GeForce RTX 4090", 24.0, "89")]),
+    "64GB-1x32GB": (63.7, [card(0, "AMD Radeon RX 9070 XT", 31.8, "gfx1201")]),                 # #406
+    "32GB-2x24GB": (31.9, [card(i, "AMD Radeon RX 7900 XTX", 24.0, "gfx1100") for i in range(2)]),   # #364
+    "47GB-2x16GB": (47.0, [card(i, "AMD Radeon RX 7600 XT", 15.9, "gfx1102") for i in range(2)]),    # #384
+    "96GB-1x16GB": (95.8, [card(0, "AMD Radeon RX 7700 XT", 15.9, "gfx1101")]),
+    "128GB-1x24GB": (127.8, [card(0, "AMD Radeon RX 7900 XTX", 24.0, "gfx1100")]),
 }
 # (family, model): None = the recommended size
-MODELS = [("qwen", None), ("qwen", "Q2_0"), ("qwen", "IQ3_XXS"), ("qwen", "IQ3_S"), ("unsloth", "UD-Q4_K_XL")]
+MODELS = [("qwen", None), ("qwen", "Q2_0"), ("qwen", "IQ3_XXS"), ("qwen", "IQ3_S"), ("unsloth", "UD-IQ4_XS")]
 
 
 class FakeGGUF:
@@ -71,7 +72,10 @@ def install(ram, found, argv, answers=None, extra=(), avx512=False, configs=()):
         (t / "data" / "mtp" / "rt" / "experts.bin").write_bytes(b"")
         eng = t / "engine"
         eng.mkdir()
-        (eng / "BUILD.json").write_text(json.dumps({"version": "0.1.32", "source": "local", "cuda_dirs": ["<cuda>"]}))
+        # the engine is always compiled from this source here, so its BUILD.json says the source's version
+        (eng / "BUILD.json").write_text(json.dumps({"source": "local-hip",
+                                                     "version": ".".join(map(str, SOURCE_VER)), "backend": "hip",
+                                                     "archs": [c["arch"] for c in found], "lib_dirs": ["<rocm>"]}))
         for name, c in configs:
             (t / name).write_text(json.dumps(c))
         asked = []
@@ -93,30 +97,27 @@ def install(ram, found, argv, answers=None, extra=(), avx512=False, configs=()):
 
         patches = [
             mock.patch.object(setup, "ROOT", t),
-            mock.patch.object(setup, "GPU_PICK", None),
             mock.patch.object(setup, "data_folder", lambda d: (t / "data", [])),
             mock.patch.object(setup, "load_settings", lambda: {}),
             mock.patch.object(setup, "save_settings", lambda s: None),
-            mock.patch.object(setup, "gpus", lambda: found),
-            mock.patch.object(setup, "amd_gpus", lambda: []),
+            mock.patch.object(setup, "amd_gpus", lambda *a: found),
             mock.patch.object(setup, "ram_gb", lambda: ram),
             mock.patch.object(setup, "cpu_info", lambda: ("Test CPU", True, avx512)),
             mock.patch.object(setup, "cpu_cores", lambda: None),   # #642: not a hybrid CPU
-            mock.patch.object(setup, "page_file_gb", lambda: 16.0),
-            mock.patch.object(setup, "is_wsl", lambda: False),
             mock.patch.object(setup, "rotational_disk", lambda p: None),   # #605: the test PC's own disk
             mock.patch.object(setup, "free_gb", lambda p: 900.0),
             mock.patch.object(setup, "pip_install", lambda *a, **k: None),
             mock.patch.object(setup, "get_llama_cpp", lambda: t / "llama.cpp"),
-            mock.patch.object(setup, "get_prebuilt", lambda *a, **k: eng),
-            mock.patch.object(setup, "update_installed_engine", lambda *a, **k: None),
+            mock.patch.object(setup, "source_ver", lambda: SOURCE_VER),
+            mock.patch.object(setup, "build_engine_hip", lambda *a, **k: eng),
+            mock.patch.object(setup, "hipblaslt_table", lambda *a, **k: None),
             mock.patch.object(setup, "download", fake_download),
             mock.patch.object(setup, "check_shards", lambda shards: None),
             mock.patch.object(setup, "verify_sha256", lambda *a: None),
             mock.patch.object(setup, "run", lambda *a, **k: None),
             mock.patch.object(setup, "mtp_corrupt", lambda *a, **k: False),
             mock.patch.object(setup, "refresh_draft_vocab", lambda *a, **k: None),
-            mock.patch.object(setup, "write_run_script", lambda tag, cfg, port, *_: t / f"run-{tag}.bat"),
+            mock.patch.object(setup, "write_run_script", lambda tag, cfg, port, *_: t / f"run-{tag}.sh"),
             mock.patch.object(setup, "saved_calibration", lambda cfg: None),
             mock.patch.object(setup, "calibrate_config", mock.Mock(side_effect=AssertionError("calibrated"))),
             mock.patch.dict(sys.modules, {"gguf_reader": types.SimpleNamespace(GGUFFile=FakeGGUF)}),
@@ -173,10 +174,13 @@ class Golden(unittest.TestCase):
     def test_the_baseline_covers_every_kind_of_pc(self):
         written = [k for k, v in self.golden.items() if v["code"] == 0]
         self.assertGreaterEqual(len(written), 20)
-        lowram_multi = self.golden["32GB-2x24GB qwen IQ3_XXS"]["config"]   # #364 -> #642: low-RAM, two cards -> both
-        self.assertIn("--resident-experts" if "--resident-experts" in lowram_multi["args"] else "--mmap-experts",
-                      lowram_multi["args"])
-        self.assertEqual(lowram_multi.get("gpu"), [0, 1])                   # 0.1.40 (#642): resident on both cards
+        lowram = self.golden["32GB-2x24GB qwen IQ3_XXS"]["config"]
+        self.assertIn("--mmap-experts", lowram["args"])          # 31.9 GB of RAM: no room for the resident copy
+        self.assertEqual(lowram.get("gpu"), 0)                   # #364: setup on AMD starts on one card
+        # #642: with --gpus it runs on both cards
+        code, out, cfg, _ = install(31.9, PROFILES["32GB-2x24GB"][1], argv_for("qwen", "IQ3_XXS") + ["--gpus", "0,1"])
+        self.assertEqual(code, 0, out[-3000:])
+        self.assertEqual(cfg.get("gpu"), [0, 1])
 
     def test_yes(self):
         for key, ram, found, family, model in self.cases():
@@ -188,7 +192,7 @@ class Golden(unittest.TestCase):
 
     def test_enter_for_every_question(self):
         for key, ram, found, family, model in self.cases():
-            if "UD-Q4_K_XL" in key and ram < 48:               # --yes consents to the risk; Enter declines it (the
+            if "UD-IQ4_XS" in key and ram < 48:               # --yes consents to the risk; Enter declines it (the
                 continue                                       # "Install it anyway? [n]" question), by design
             with self.subTest(key):
                 code, out, cfg, asked = install(ram, found, argv_for(family, model), answers="")

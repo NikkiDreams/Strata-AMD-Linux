@@ -204,16 +204,10 @@ class BrokenEarlierConfig(unittest.TestCase):
 
 
 class LowRamGpus(unittest.TestCase):
-    """S2/S3 (#364 #384): one GPU recommended in the low-RAM mode, all of them when asked for."""
+    """S2/S3 (#364 #384 #642): setup on AMD starts on one card; --gpus shares the model across the cards, and the
+    low-RAM variant is the resident one when the RAM holds what no card holds, else the mapped one."""
 
-    def setUp(self):
-        # the behaviour before RESIDENT_SPLIT_ENGINE (an engine from before 0.1.40); the tests of the newer engine
-        # patch MIN_ENGINE themselves, and the default (MIN_ENGINE = 0.1.40) is covered by test_setup_golden
-        p = mock.patch.object(setup, "MIN_ENGINE", (0, 1, 39))
-        p.start()
-        self.addCleanup(p.stop)
-
-    def test_explicit_gpus_are_kept_with_the_mapped_variant(self):
+    def test_explicit_gpus_are_kept_with_the_resident_variant(self):
         for prof, model in (("32GB-2x24GB", "IQ3_XXS"), ("32GB-2x24GB", "Q2_0"), ("47GB-2x16GB", "IQ3_XXS")):
             with self.subTest(prof=prof, model=model):
                 ram, found = PROFILES[prof]
@@ -222,28 +216,17 @@ class LowRamGpus(unittest.TestCase):
                 self.assertEqual(code, 0, out)
                 self.assertEqual(cfg["gpu"], [0, 1])
                 self.assertEqual(cfg["layer_split"], "auto")
-                self.assertIn("--mmap-experts", cfg["args"])
-                self.assertNotIn("--resident-experts", cfg["args"])
-                self.assertIn("as you chose (--gpus)", out)
-                self.assertIn("RAM can fill up to 0 free", out)
+                self.assertIn("--resident-experts", cfg["args"])          # #642: resident on a split too
+                self.assertIn("together (the model's layers are split across them)", out)
                 self.assertIn("low-RAM mode on 2 GPUs", out)
+                self.assertIn("stay in RAM", out)
 
     def test_the_share_counts_every_card(self):
         ram, found = PROFILES["47GB-2x16GB"]                              # #384: 2 x 16 GB, 47 GB, IQ3_XXS at 64K
         code, out, cfg, _ = install(ram, found, ["--family", "qwen", "--model", "IQ3_XXS", "--no-start",
                                                  "--gpus", "0,1"])
         one = setup.low_ram_gpu_gb("IQ3_XXS", 15.9, 65536, "int8")
-        self.assertIn(f"the GPUs hold ~{100 * 2 * one / setup.MODELS['IQ3_XXS']['arena_gb']:.0f}% of them", out)
-
-    def test_asked_and_answered_two(self):
-        ram, found = PROFILES["32GB-2x24GB"]
-        code, out, cfg, asked = install(ram, found, ["--family", "qwen", "--model", "Q2_0", "--no-start"],
-                                        answers={"Low-RAM mode: which GPUs?": "2"})
-        self.assertEqual(code, 0, out)
-        self.assertTrue(any("Low-RAM mode: which GPUs? [1]" in q for q in asked), asked)
-        self.assertEqual(cfg["gpu"], [0, 1])
-        self.assertIn("--mmap-experts", cfg["args"])
-        self.assertIn("1) GPU 0 (NVIDIA GeForce RTX 3090, 24 GB) only", out)
+        self.assertIn(f"they hold ~{100 * 2 * one / setup.MODELS['IQ3_XXS']['arena_gb']:.0f}% of IQ3_XXS's experts", out)
 
     def test_yes_and_enter_keep_one_gpu(self):
         ram, found = PROFILES["32GB-2x24GB"]
@@ -255,13 +238,14 @@ class LowRamGpus(unittest.TestCase):
             self.assertIn("--resident-experts", cfg["args"])
 
     def test_low_ram_resident_with_gpus(self):
+        """#642: the resident variant runs on a layer split, so --low-ram resident keeps it there."""
         ram, found = PROFILES["32GB-2x24GB"]
-        code, out, cfg, _ = install(ram, found, ["--family", "qwen", "--model", "Q2_0", "--no-start", "--gpus", "0,1",
-                                                 "--low-ram", "resident"])
+        code, out, cfg, _ = install(ram, found, ["--family", "qwen", "--model", "Q2_0", "--no-start",
+                                                 "--gpus", "0,1", "--low-ram", "resident"])
         self.assertEqual(code, 0, out)
         self.assertEqual(cfg["gpu"], [0, 1])
-        self.assertIn("--mmap-experts", cfg["args"])
-        self.assertIn("--low-ram resident has no layer split yet", out)
+        self.assertIn("--resident-experts", cfg["args"])
+        self.assertNotIn("no layer split yet", out)
 
     def test_low_ram_resident_alone_keeps_one_gpu_without_asking(self):
         ram, found = PROFILES["32GB-2x24GB"]
@@ -271,78 +255,27 @@ class LowRamGpus(unittest.TestCase):
         self.assertEqual(cfg["gpu"], 0)
         self.assertFalse(any("Low-RAM mode" in q for q in asked), asked)
 
-    def test_low_ram_on_gpus_with_a_resident_split_engine(self):
-        """#642: an engine that runs the resident variant on a layer split keeps the cards together, resident."""
-        ram, found = PROFILES["32GB-2x24GB"]
-        with mock.patch.object(setup, "MIN_ENGINE", setup.RESIDENT_SPLIT_ENGINE):
-            code, out, cfg, asked = install(ram, found, ["--family", "qwen", "--model", "Q2_0", "--no-start"],
-                                            answers="")
-            self.assertEqual(code, 0, out)
-            self.assertEqual(cfg["gpu"], [0, 1])
-            self.assertIn("--resident-experts", cfg["args"])
-            self.assertFalse(any("Low-RAM mode" in q for q in asked), asked)
-            self.assertIn("stay in RAM", out)
-            code, out, cfg, _ = install(ram, found, ["--family", "qwen", "--model", "Q2_0", "--no-start",
-                                                     "--gpus", "0,1", "--low-ram", "resident"])
-            self.assertEqual(code, 0, out)
-            self.assertEqual(cfg["gpu"], [0, 1])
-            self.assertIn("--resident-experts", cfg["args"])
-            self.assertNotIn("no layer split yet", out)
-
 
 class StartOnSeveralGpus(unittest.TestCase):
-    """A resident low-RAM config started on several GPUs reads the experts through the file cache (#364 #384)."""
-
-    def setUp(self):
-        # the behaviour before RESIDENT_SPLIT_ENGINE (an engine from before 0.1.40); the tests of the newer engine
-        # patch MIN_ENGINE themselves, and the default (MIN_ENGINE = 0.1.40) is covered by test_setup_golden
-        p = mock.patch.object(setup, "MIN_ENGINE", (0, 1, 39))
-        p.start()
-        self.addCleanup(p.stop)
-
-    def test_split_mmap(self):
-        cfg = {"args": ["--pack", "p", "--resident-experts", "--kv", "int8"]}
-        out = io.StringIO()
-        with contextlib.redirect_stdout(out):
-            self.assertTrue(setup.split_mmap(cfg))
-            self.assertFalse(setup.split_mmap(cfg))
-            self.assertFalse(setup.split_mmap({"args": ["--mmap-experts"]}))
-        self.assertEqual(cfg["args"], ["--pack", "p", "--mmap-experts", "--kv", "int8"])
-        self.assertIn("no layer split yet", out.getvalue())
+    """#642: a resident low-RAM config keeps its resident variant on a layer split (each card's cache holds the
+    most-used experts of its own layers), and offer_together offers both cards for it as for any other config."""
 
     def offer(self, args, stdin):
         found = PROFILES["32GB-2x24GB"][1]
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "strata-q2_0.json"
             cfg = {"args": list(args)}
-            with mock.patch.object(setup, "gpus", lambda: found), \
+            with mock.patch.object(setup, "amd_gpus", lambda: found), \
                     mock.patch.object(setup, "engine_runs_on", lambda g: True):
                 code, out, asked = run(setup.offer_together, p, cfg, stdin is None, stdin=stdin)
             return code, out, asked, json.loads(p.read_text())
 
-    def test_offer_together_recommends_one_gpu_for_a_resident_config(self):
+    def test_offer_together_offers_both_cards(self):
         code, out, asked, cfg = self.offer(["--resident-experts"], None)       # --yes: the recommendation
         self.assertIsNone(code, out)
-        self.assertNotIn("gpu", cfg)
+        self.assertEqual(cfg["gpu"], [0, 1])
         self.assertEqual(cfg["args"], ["--resident-experts"])
-        code, out, asked, cfg = self.offer(["--resident-experts"], "y")
-        self.assertIn("[n]", asked[0])
-        self.assertEqual(cfg["gpu"], [0, 1])
-        self.assertEqual(cfg["args"], ["--mmap-experts"])   # #1447: no helper cache, no --remote-expert-opt
-        code, out, asked, cfg = self.offer(["--mmap-experts"], None)           # other configs: as before
-        self.assertEqual(cfg["gpu"], [0, 1])
-
-    def test_resident_split_engine_keeps_a_resident_config(self):
-        """#642: from RESIDENT_SPLIT_ENGINE a resident config is offered both cards as any other, and stays resident."""
-        with mock.patch.object(setup, "MIN_ENGINE", setup.RESIDENT_SPLIT_ENGINE):
-            cfg = {"args": ["--pack", "p", "--resident-experts", "--kv", "int8"]}
-            self.assertFalse(setup.split_mmap(cfg))
-            self.assertEqual(cfg["args"], ["--pack", "p", "--resident-experts", "--kv", "int8"])
-            code, out, asked, cfg = self.offer(["--resident-experts"], None)   # --yes: the recommendation
-            self.assertIsNone(code, out)
-            self.assertEqual(cfg["gpu"], [0, 1])
-            self.assertEqual(cfg["args"], ["--resident-experts"])
-            self.assertNotIn("OS file cache", out)
+        self.assertNotIn("OS file cache", out)
 
     def test_start_with_gpus(self):
         found = PROFILES["32GB-2x24GB"][1]
@@ -352,60 +285,33 @@ class StartOnSeveralGpus(unittest.TestCase):
             p = Path(d) / "strata-q2_0.json"
             p.write_text(json.dumps({"exe": str(exe), "args": ["--resident-experts"], "gpu": 0, "gpus_asked": True}))
             call = mock.Mock(return_value=0)
-            with mock.patch.object(setup, "gpus", lambda: found), \
-                    mock.patch.object(setup, "ensure_engine_for", lambda cards, path, cfg, yes: cfg), \
-                    mock.patch.object(setup, "is_wsl", lambda: False), \
+            with mock.patch.object(setup, "amd_gpus", lambda: found), \
+                    mock.patch.object(setup, "engine_archs", lambda: ["gfx1100"]), \
                     mock.patch.object(setup.subprocess, "call", call):
                 code, out, _ = run(setup.start, p, None, [0, 1], False, True)
             cfg = json.loads(p.read_text())
         self.assertIsNone(code, out)
         self.assertEqual(cfg["gpu"], [0, 1])
-        self.assertEqual(cfg["args"], ["--mmap-experts"])   # #1447: no helper cache, no --remote-expert-opt
-        self.assertIn("no layer split yet", out)
+        self.assertEqual(cfg["args"], ["--resident-experts"])
         self.assertTrue(call.called)
 
 
-class SmallCard(unittest.TestCase):
-    """S9: a card under 8 GB named with --gpus is a risk to confirm, not a stop."""
-    FOUND = [card(0, "NVIDIA GeForce RTX 3090", 24.0, "86"), card(1, "NVIDIA GeForce RTX 2060", 6.0, "75")]
-
-    def test_named_with_yes(self):
-        code, out, cfg, _ = install(63.7, self.FOUND, ["--family", "qwen", "--model", "Q2_0", "--no-start",
-                                                       "--gpus", "0,1"])
-        self.assertEqual(code, 0, out)
-        self.assertEqual(cfg["gpu"], [0, 1])
-        self.assertIn("GPU 1 (NVIDIA GeForce RTX 2060) has 6 GB of VRAM", out)
-        self.assertIn("is used together with the others, as you chose", out)
-
-    def test_named_and_enter_stops(self):
-        code, out, cfg, asked = install(63.7, self.FOUND, ["--family", "qwen", "--model", "Q2_0", "--no-start",
-                                                           "--gpus", "0,1"], answers="")
-        self.assertEqual(code, 1)
-        self.assertTrue(any("Use it anyway?" in q for q in asked), asked)
-
-    def test_not_named_is_not_offered(self):
-        code, out, cfg, _ = install(63.7, self.FOUND, ["--family", "qwen", "--model", "Q2_0", "--no-start"])
-        self.assertEqual(code, 0, out)
-        self.assertEqual(cfg["gpu"], 0)                                   # one card: as before
-
-
 class SplitShortCard(unittest.TestCase):
-    """#448: a second card too small to lend a split's prompt chunk: the first card alone recommended, the pair kept
-    when named."""
-    FOUND = [card(0, "NVIDIA RTX PRO 4500 Blackwell", 31.8, "120"), card(1, "NVIDIA GeForce RTX 3080", 10.0, "86")]
+    """#448: a second card too small to lend a split its prompt chunk: setup starts on the first card and the offer at
+    a start recommends it alone; the pair is kept when named."""
+    FOUND = [card(0, "AMD Radeon RX 9070 XT", 31.8, "gfx1201"), card(1, "AMD Radeon (gfx1102)", 10.0, "gfx1102")]
 
     def test_rule(self):
         self.assertEqual([g["index"] for g in setup.split_short(self.FOUND)], [1])
         self.assertEqual(setup.split_short(PROFILES["32GB-2x24GB"][1]), [])
         self.assertEqual(setup.split_short(PROFILES["47GB-2x16GB"][1]), [])
-        eights = [card(i, "NVIDIA GeForce RTX 3070", 8.0, "86") for i in range(2)]
+        eights = [card(i, "AMD Radeon (gfx1102)", 8.0, "gfx1102") for i in range(2)]
         self.assertEqual(setup.split_short(eights), [])                   # neither card alone reads more
 
-    def test_yes_takes_the_first_card(self):
+    def test_setup_starts_on_the_first_card(self):
         code, out, cfg, _ = install(127.8, self.FOUND, ["--family", "qwen", "--model", "Q2_0", "--no-start"])
         self.assertEqual(code, 0, out)
         self.assertEqual(cfg["gpu"], 0)
-        self.assertIn("too small to lend a split its prompt buffers", out)
 
     def test_named_pair_is_kept(self):
         code, out, cfg, _ = install(127.8, self.FOUND, ["--family", "qwen", "--model", "Q2_0", "--no-start",
@@ -413,10 +319,10 @@ class SplitShortCard(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertEqual(cfg["gpu"], [0, 1])
 
-    def test_offer_together_defaults_to_one(self):
+    def test_offer_together_recommends_the_first_card(self):
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "strata-q2_0.json"
-            with mock.patch.object(setup, "gpus", lambda: self.FOUND), \
+            with mock.patch.object(setup, "amd_gpus", lambda: self.FOUND), \
                     mock.patch.object(setup, "engine_runs_on", lambda g: True):
                 code, out, asked = run(setup.offer_together, p, {"args": ["--mmap-experts"]}, True)
             cfg = json.loads(p.read_text())
@@ -427,7 +333,7 @@ class SplitShortCard(unittest.TestCase):
 
 class RamFloor(unittest.TestCase):
     """S7: less RAM than the smallest model needs: a stop with --yes alone, a risk with --model."""
-    FOUND = [card(0, "NVIDIA GeForce RTX 3060", 8.0, "86")]
+    FOUND = [card(0, "AMD Radeon RX 7600", 8.0, "gfx1102")]
 
     def test_yes_alone_stops(self):
         code, out, cfg, _ = install(19.9, self.FOUND, ["--family", "qwen", "--no-start"])
@@ -474,7 +380,7 @@ class KvStreaming(unittest.TestCase):
         code, out, cfg, _ = self.go("Q2_0", "--resident-budget-gib", "30")
         self.assertEqual(code, 0, out)
         self.assertNotIn("--resident-budget-gib", cfg["args"])
-        self.assertIn("--resident-budget-gib is for UD-Q4_K_XL", out)
+        self.assertIn("--resident-budget-gib is for UD-IQ4_XS", out)
 
 
 class RulesAgreeWithTheWrittenConfig(unittest.TestCase):

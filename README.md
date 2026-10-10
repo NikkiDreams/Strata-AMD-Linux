@@ -1,12 +1,11 @@
 <h1 align="center">Strata</h1>
 
-**English** · [简体中文](README.zh-CN.md) · [日本語](README.ja.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [Español](README.es.md) · [Português](README.pt-BR.md)
-
 <p align="center"><b>Run a 125-billion-parameter AI model on your own gaming PC</b><br>
-NVIDIA or AMD graphics card (12 GB or more) · Windows or Linux · free and open source</p>
+AMD graphics card (12 GB or more) · Linux · free and open source</p>
 
 <p align="center"><a href="https://github.com/Niko1221/Strata/releases/download/v0.1.10/Pagoda.mp4"><img src="docs/media/pagoda-preview.webp" width="720" alt="A voxel pagoda garden that Strata's model wrote, running in the browser"></a><br>
-<sub>A voxel pagoda garden, 1 shot prompt running on an RTX 5070 with Strata (IQ3_S, 128K context) ·
+<sub>A voxel pagoda garden, 1 shot prompt running on an RTX 5070 with Strata (IQ3_S, 128K context; an NVIDIA card, which
+this fork does not run) ·
 <a href="https://github.com/Niko1221/Strata/releases/download/v0.1.10/Pagoda.mp4">full video (49 s)</a></sub></p>
 
 Strata runs **[Qwen3.8-Flash-Next](https://huggingface.co/Qwen/Qwen3.8-Flash-Next)** on a normal PC. This is a
@@ -15,24 +14,12 @@ and coding agents. Nothing leaves your PC.
 
 ## How fast is it?
 
-We measured it on two ordinary gaming PCs. A token is about ¾ of a word.
+We measured it on an ordinary gaming PC. A token is about ¾ of a word.
 
 - **Writes answers:** how fast the reply appears in a short chat. 60 tokens per second is faster than you can read.
 - **Reads your prompt:** how fast it takes in what you send (here a 32K-token document, code or chat history).
 
-<table>
-<tr><th>NVIDIA: RTX 5070 (12 GB), Ryzen 5 7600, 64 GB RAM</th><th>AMD: RX 9070 XT (16 GB), Ryzen 9 3900X, 47 GB RAM</th></tr>
-<tr><td>
-
-| Size | Writes answers | Reads your prompt |
-| --- | ---: | ---: |
-| **Q2_0** | 94 tokens/s | 2,650 tokens/s |
-| **IQ2_XS** | 79 tokens/s | 2,090 tokens/s |
-| **IQ3_XXS** | 62 tokens/s | 1,750 tokens/s |
-| **IQ3_S** | 53 tokens/s | 1,620 tokens/s |
-| **Coder** | 55 tokens/s | 2,180 tokens/s |
-
-</td><td>
+**AMD: RX 9070 XT (16 GB), Ryzen 9 3900X, 47 GB RAM**
 
 | Size | Writes answers | Reads your prompt |
 | --- | ---: | ---: |
@@ -40,13 +27,9 @@ We measured it on two ordinary gaming PCs. A token is about ¾ of a word.
 | **IQ2_XS** | 52 tokens/s | 1,110 tokens/s |
 | **Coder** | 44 tokens/s | 1,420 tokens/s |
 
-</td></tr>
-</table>
-
-NVIDIA: Q2_0 with engine 0.1.36, the other rows with 0.1.26 (4K answers, 32K prompts). The full tables are in
-[DETAILS.md](docs/DETAILS.md#speed-measured). A card with more VRAM is faster: an RTX 3090 (24 GB) should write
-about 100-140 tokens per second. Long chats and other cards: [speed of each model](docs/MODELS.md#how-fast-is-each-size),
-[community results](docs/COMMUNITY_BENCHMARKS.md).
+4K answers, 32K prompts. The full tables, with the engine each row was measured on, are in
+[DETAILS.md](docs/DETAILS.md#speed-measured). A card with more VRAM is faster. Long chats and other cards:
+[speed of each model](docs/MODELS.md#how-fast-is-each-size), [community results](docs/COMMUNITY_BENCHMARKS.md).
 
 <p align="center"><a href="https://buymeacoffee.com/strataengine"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="50"></a><br>
 <sub>Strata is free. If it runs well on your PC, a coffee keeps the work on it going.</sub></p>
@@ -55,17 +38,17 @@ about 100-140 tokens per second. Long chats and other cards: [speed of each mode
 
 | | |
 | --- | --- |
-| **Graphics card** | **NVIDIA** GeForce RTX 20, 30, 40 or 50 series, or **AMD** Radeon RX 7900 XT / XTX, RX 7800 XT / 7700 XT, RX 9060 XT, RX 9070 / 9070 XT, Radeon AI PRO R9700 or RX 6800 / 6900 series. It needs **12 GB of VRAM or more**. |
+| **Graphics card** | **AMD** Radeon RX 7900 XT / XTX, RX 7800 XT / 7700 XT, RX 9060 XT, RX 9070 / 9070 XT, Radeon AI PRO R9700 or RX 6800 / 6900 series. It needs **12 GB of VRAM or more**. An NVIDIA card is not supported by this fork: setup stops with a plain message. |
 | **RAM** | 32 GB or more. Your RAM decides [which model](#which-model-should-i-pick) fits. 64 GB runs every size. |
 | **Disk** | About 80 GB free. Use an SSD if you can: the first start is much faster. |
-| **System** | Windows 10 / 11 or Linux, and a current graphics driver from NVIDIA or AMD. |
+| **System** | Linux, with the kernel's amdgpu driver. Windows is not supported by this fork. |
 
-The installer sets up everything else. Two or three cards can share the model ([multi-GPU](docs/MULTI_GPU.md)).
+The installer sets up everything else, and compiles the engine for your card (10-20 minutes, once). Two or three cards
+can share the model ([multi-GPU](docs/MULTI_GPU.md)).
 
 Experimental, written and tested by community members on their own machines:
 
-- **Older graphics cards** (Tesla P40 / V100, GTX 10, Radeon VII / MI50, RX 6700 XT, RX 5500 XT): [Older GPUs](docs/OLDER_GPUS.md).
-- **Intel Arc**, built from source on Linux: [Intel Arc](docs/INTEL_ARC.md).
+- **Older AMD cards** (Radeon VII / MI50, RX 6700 XT, RX 5500 XT): [Older GPUs](docs/OLDER_GPUS.md).
 - **AMD Ryzen AI Max (Strix Halo)**, built from source on Linux: [Strix Halo](docs/STRIX_HALO.md).
 - **Older processors without AVX2**: they work, but slowly. [Older CPUs](docs/INSTALL.md#older-cpus-experimental).
 
@@ -88,10 +71,9 @@ you how to connect your apps. AI tools can also install, start and stop Strata t
 ### Or do it yourself
 
 [Download Strata](https://github.com/Niko1221/Strata/archive/refs/heads/main.zip) and unzip it (or `git clone` it).
-**Windows:** double-click **`START-HERE.bat`**. **Linux:** run **`./setup.sh`** in the Strata folder.
+Run **`./setup.sh`** in the Strata folder.
 
-The steps are the same for NVIDIA and AMD. The installer finds your card and sets up the right engine for it. It
-asks you a few questions:
+The installer finds your AMD card and compiles the engine for it (10-20 minutes, once). It asks you a few questions:
 
 - which model and which size,
 - how much context (how much text the model keeps in mind),
@@ -105,9 +87,9 @@ download stops, run it again: it continues where it left off. Your browser opens
 > Strata loads 35-55 GB into your RAM and locks part of it for the graphics card. This is normal. Wait, and don't
 > close the window. The window shows what Strata is doing.
 
-**Next time**, run `START-HERE.bat` (or `./setup.sh`) again. It starts right away and downloads nothing twice. Close
-its window to stop the model. `UPDATE.bat` (`./update.sh`) updates Strata without starting it. Updating, Docker,
-several cards, where the files go and every option: [docs/INSTALL.md](docs/INSTALL.md).
+**Next time**, run `./setup.sh` again. It starts right away and downloads nothing twice. Close its window to stop the
+model. `./update.sh` updates Strata without starting it. Updating, Docker, several cards, where the files go and every
+option: [docs/INSTALL.md](docs/INSTALL.md).
 
 ## Which model should I pick?
 
@@ -126,16 +108,14 @@ sizes are faster. Larger sizes are a bit smarter.
   including Chinese and other CJK text (#438). For those, take Q2_0, IQ2_XS or IQ3_S, which keep every expert.
 - **[Swift 1.5](docs/MODELS.md#swift-15):** a fine-tune that thinks for a much shorter time before it answers. You
   get the answer sooner, at about the same quality.
-- **[Unsloth UD-IQ4_XS](docs/MODELS.md#unsloth-ud-iq4_xs):** Unsloth's ~4-bit version, between IQ3_S and
-  UD-Q4_K_XL in quality. A 94 GB download. With less than ~80 GB of RAM, Strata reads part of it from the SSD
-  while it answers, so it is slower there (an NVMe SSD helps).
-- **[Unsloth UD-Q4_K_XL](docs/MODELS.md#unsloth-ud-q4_k_xl-experimental)** (experimental): the closest to the full
-  model. But Strata reads most of it from the SSD while it answers, so it writes only 7-8.5 tokens/s on a 64 GB PC.
+- **[Unsloth UD-IQ4_XS](docs/MODELS.md#unsloth-ud-iq4_xs):** Unsloth's ~4-bit version, the best quality here. A 94 GB
+  download. With less than ~80 GB of RAM, Strata reads part of it from the SSD while it answers, so it is slower there
+  (an NVMe SSD helps).
 - **[OrcaRouter's Uncensored IQ3_XXS](docs/MODELS.md#orcarouter-uncensored-iq3_xxs):** you set it up by hand. It is
   not in the installer's menu.
 
 Sizes, downloads and what fits where: [docs/MODELS.md](docs/MODELS.md). To add another model later, run
-`SETUP.bat` (Linux: `./setup.sh --setup`).
+`./setup.sh --setup`.
 
 ## Using it
 
@@ -152,9 +132,9 @@ Sizes, downloads and what fits where: [docs/MODELS.md](docs/MODELS.md). To add a
     ([setup](docs/DETAILS.md#the-responses-api-and-codex-cli)).
 - **Thinking:** choose **off, low, medium or high** in the chat menu or in your app's "reasoning effort". Off is the
   fastest. High is best for hard questions.
-- **Pictures:** say yes to "Images?" in setup. Then click **Picture** in the chat, or attach pictures in your app.
-  AMD cards read pictures on Linux through the processor; on Windows they can't yet.
-- **From your phone or another PC:** `START-HERE.bat --setup --host 0.0.0.0 --api-key <secret>`. Always set a key.
+- **Pictures:** run setup with `--vision cpu` (images are off by default: this fork has no AMD image encoder build, so
+  the encoder runs on the processor). Then click **Picture** in the chat, or attach pictures in your app.
+- **From your phone or another PC:** `./setup.sh --setup --host 0.0.0.0 --api-key <secret>`. Always set a key.
 - **One request at a time:** by default Strata answers one request, and the others wait. To answer several at once,
   set `"parallel": 2` ([BATCHING.md](docs/BATCHING.md)). On a 12 GB card this makes each answer slower.
 - **Long prompts:** Strata reads the first message of a chat in full, about 1 minute per 30,000 tokens. Follow-up
@@ -166,7 +146,7 @@ More: [where your chats are stored](docs/INSTALL.md#where-things-are-stored), [t
 
 - **My PC froze the first time Strata started.** This is normal while it loads the model. Wait, and don't close the
   window. Still frozen after 10 minutes? Restart the PC, close other programs and try again, or pick a smaller size.
-- **It stopped while downloading or installing.** Run `START-HERE.bat` (or `./setup.sh`) again. It continues where
+- **It stopped while downloading or installing.** Run `./setup.sh` again. It continues where
   it stopped.
 - **It's very slow and the disk light keeps blinking, or it says "the engine stopped unexpectedly".** Your PC does
   not have enough free RAM. Close other programs (browsers use a lot), or pick a smaller size (Q2_0 or IQ2_XS).

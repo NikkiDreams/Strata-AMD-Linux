@@ -79,12 +79,13 @@ class Rule(unittest.TestCase):
 
 class Install(unittest.TestCase):
     def test_install_on_two_gpus(self):
-        """#1447: a plain two-GPU install has no helper cache, so no --remote-expert-opt is written."""
+        """#1447: a two-GPU install (--gpus: setup on AMD starts on one card) has no helper cache, so no
+        --remote-expert-opt is written."""
         ram, found = PROFILES["47GB-2x16GB"]
-        args = ["--family", "qwen", "--no-start", "--model", "Q2_0"]
+        args = ["--family", "qwen", "--no-start", "--model", "Q2_0", "--gpus", "0,1"]
         code, text, cfg, _ = install(ram, found, args)
         self.assertEqual(code, 0, text)
-        self.assertIsInstance(cfg.get("gpu"), list)
+        self.assertEqual(cfg.get("gpu"), [0, 1])
         self.assertNotIn(FLAG, cfg["args"])
 
     def test_install_on_one_gpu(self):

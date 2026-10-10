@@ -30,12 +30,14 @@ class Update(unittest.TestCase):
         return p
 
     def run_update(self, have, argv=()):
-        a = mock.Mock(**{"build": False, "prebuilt": "URL", **dict(argv)})
+        a = mock.Mock(**dict(argv))
+        amd = [{"index": 0, "name": "AMD Radeon RX 7900 XTX", "vram_gb": 23.98, "arch": "gfx1100"}]
         out = io.StringIO()
         with mock.patch.object(setup, "pip_install") as pip, \
-                mock.patch.object(setup, "update_installed_engine") as eng, \
+                mock.patch.object(setup, "build_engine_hip") as eng, \
                 mock.patch.object(setup, "refresh_draft_vocab") as dv, \
                 mock.patch.object(setup, "start") as start, \
+                mock.patch.object(setup, "amd_gpus", lambda *a, **k: amd), \
                 mock.patch("subprocess.call") as call, \
                 contextlib.redirect_stdout(out):
             rc = setup.update_install(have, a)
@@ -47,27 +49,20 @@ class Update(unittest.TestCase):
             rc, pip, eng, dv, start, call, out = self.run_update([p])
         self.assertEqual(rc, 0)
         pip.assert_called_once()
-        eng.assert_called_once_with("URL")
+        eng.assert_called_once()                                   # the engine is compiled for this PC
+        self.assertEqual(eng.call_args[0][2], "none")              # this config has no image encoder
         dv.assert_called_once()
         self.assertEqual(dv.call_args[0][1], "en")                 # the model's own subset is kept
         start.assert_not_called()
         call.assert_not_called()
         self.assertIn("Strata is updated", out)
 
-    def test_build_keeps_the_compiled_engine_path(self):
-        with tempfile.TemporaryDirectory() as d:
-            p = self.config(Path(d))
-            rc, pip, eng, dv, *_ = self.run_update([p], {"build": True})
-        self.assertEqual(rc, 0)
-        eng.assert_not_called()
-        self.assertEqual(dv.call_args[0][1], "cjk")
-
     def test_nothing_installed(self):
         rc, pip, eng, dv, start, call, out = self.run_update([])
         self.assertEqual(rc, 0)
         for m in (pip, eng, dv, start, call):
             m.assert_not_called()
-        self.assertIn("START-HERE.bat", out)
+        self.assertIn("./setup.sh", out)
 
     def test_a_json_that_is_no_model_config_is_skipped(self):
         """#549: a strata-*.json without "args" (not written by setup) stopped update.sh with KeyError: 'args'."""
@@ -111,7 +106,7 @@ class SettingsLine(unittest.TestCase):
     fields), so a change made by hand to strata-<model>.json shows without reading the log."""
 
     CFG = {"exe": "x", "host": "0.0.0.0", "port": 8081, "api_key": "secret", "gpu": [0, 1], "fit_max_tokens": True,
-           "args": ["--native", "E:\\Strata\\packs\\iq3_s", "--mtp", "/s/mtp/rt", "m.gguf", "--kv", "int8",
+           "args": ["--native", "/strata/packs/iq3_s", "--mtp", "/s/mtp/rt", "m.gguf", "--kv", "int8",
                     "--kv-resident", "32768", "--spec-min-p", "0.5", "--vram-reserve-mib", "2048", "--mmap-experts",
                     "--prefill", "auto"]}
 
@@ -130,9 +125,8 @@ class SettingsLine(unittest.TestCase):
             args = [x for x in self.CFG["args"] if x != "m.gguf"]           # no model file here
             p.write_text(json.dumps({**self.CFG, "exe": str(exe), "gpu": 0, "args": args}), encoding="utf-8")
             out = io.StringIO()
-            with mock.patch.object(setup, "gpus", lambda: []), \
+            with mock.patch.object(setup, "amd_gpus", lambda: []), \
                     mock.patch.object(setup, "refresh_draft_vocab"), \
-                    mock.patch.object(setup, "is_wsl", lambda: False), \
                     mock.patch.object(setup.subprocess, "call", return_value=0), \
                     contextlib.redirect_stdout(out):
                 setup.start(p, None, open_browser=False, yes=True)

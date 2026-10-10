@@ -35,20 +35,13 @@ class FloorTest(unittest.TestCase):
     def test_avx2_cpu_gets_the_normal_engine(self):
         self.assertEqual(setup.cpu_floor(True), "")
 
-    def test_linux_flags(self):
-        with mock.patch.object(setup, "WIN", False):
-            with cpuinfo("fpu sse4_1 sse4_2 popcnt avx xsave"):
-                self.assertEqual(setup.cpu_floor(False), "avx")
-            with cpuinfo("fpu sse4_1 sse4_2 popcnt"):
-                self.assertEqual(setup.cpu_floor(False), "none")
-            with cpuinfo("fpu sse3 ssse3"):
-                self.assertEqual(setup.cpu_floor(False), "unsupported")
-
-    def test_windows_probe(self):
-        with mock.patch.object(setup, "WIN", True):
-            for probe, want in (("avx", "avx"), ("sse4.2", "none"), ("", "unsupported")):
-                with mock.patch.object(setup, "_cpuid_floor", lambda p=probe: p):
-                    self.assertEqual(setup.cpu_floor(False), want)
+    def test_cpuinfo_flags(self):
+        with cpuinfo("fpu sse4_1 sse4_2 popcnt avx xsave"):
+            self.assertEqual(setup.cpu_floor(False), "avx")
+        with cpuinfo("fpu sse4_1 sse4_2 popcnt"):
+            self.assertEqual(setup.cpu_floor(False), "none")
+        with cpuinfo("fpu sse3 ssse3"):
+            self.assertEqual(setup.cpu_floor(False), "unsupported")
 
     def test_env_asks_for_a_floor_build_on_any_cpu(self):
         for v in ("avx", "none", "AVX"):
@@ -56,10 +49,6 @@ class FloorTest(unittest.TestCase):
                 self.assertEqual(setup.cpu_floor(True), v.lower())
         with mock.patch.dict(os.environ, {"STRATA_ISA_FLOOR": "bogus"}):
             self.assertEqual(setup.cpu_floor(True), "")
-
-    @unittest.skipUnless(os.name == "nt", "the CPUID stub runs on Windows")
-    def test_this_pc_probe(self):
-        self.assertIn(setup._cpuid_floor(), ("avx", "sse4.2"))   # any x86-64 PC that runs the tests
 
 
 class DefsTest(unittest.TestCase):

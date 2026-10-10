@@ -1,6 +1,5 @@
 """Tests for the per-family ROCm wheel choice of setup.py (#1103, #1267), against the version lists that AMD's TheRock
-indexes really offered on 2026-10-07 (tools/test_setup_rocm_indexes.json), and for the sm_120 compiler warning that
-now covers CUDA 13.2.0 / 13.2.1 only (#968).  No network, no GPU.
+indexes really offered on 2026-10-07 (tools/test_setup_rocm_indexes.json).  No network, no GPU.
 
     python -m unittest tools.test_setup_rocm_pins
 """
@@ -117,49 +116,6 @@ class RocmPick(unittest.TestCase):
         self.assertEqual(v, sorted(v, key=setup.rocm_vkey))
         self.assertEqual(v[-1], "7.14.0a20260612")
         self.assertLess(setup.rocm_vkey("7.9.0rc20251008"), setup.rocm_vkey("7.10.0a20251009"))   # 7.9 before 7.10
-
-
-class Sm120Compiler(unittest.TestCase):
-    """#968: only CUDA 13.2.0 / 13.2.1 (nvcc build 51) are warned about; 13.2.2 (build 86) is accepted."""
-
-    def run_sm120(self, build, archs=(120,), cuda_v=(13, 2), env=None):
-        with mock.patch.object(setup, "nvcc_build", return_value=build), \
-                mock.patch.object(setup, "find_nvcc", return_value=(None, None)), \
-                mock.patch.object(setup, "warn") as warn, mock.patch.object(setup, "ok"), \
-                mock.patch.dict(setup.os.environ, env or {}):
-            got = setup.sm120_nvcc("nvcc", cuda_v, list(archs))
-        return got, warn
-
-    def test_13_2_0_and_13_2_1_warn(self):
-        for build in (51, 78, None):                       # None: a build that cannot be read stays suspect
-            got, warn = self.run_sm120(build)
-            self.assertEqual(got, ("nvcc", (13, 2)))
-            warn.assert_called_once()
-            self.assertIn("13.2.0", warn.call_args[0][0])
-
-    def test_13_2_2_is_accepted_silently(self):
-        for build in (86, 90):
-            got, warn = self.run_sm120(build)
-            self.assertEqual(got, ("nvcc", (13, 2)))
-            warn.assert_not_called()
-
-    def test_13_2_2_keeps_the_newest_toolkit_not_an_older_one(self):
-        with mock.patch.object(setup, "nvcc_build", return_value=86), \
-                mock.patch.object(setup, "find_nvcc", side_effect=AssertionError("must not look for an older one")):
-            self.assertEqual(setup.sm120_nvcc("nvcc", (13, 2), [120]), ("nvcc", (13, 2)))
-
-    def test_not_sm120_or_not_13_2_is_untouched(self):
-        for archs, v in (((86,), (13, 2)), ((120,), (13, 0)), ((120,), (13, 3))):
-            got, warn = self.run_sm120(51, archs, v)
-            self.assertEqual(got, ("nvcc", v))
-            warn.assert_not_called()
-
-    def test_build_number_is_read_from_nvcc_output(self):
-        text = "nvcc: NVIDIA (R) Cuda compiler driver\nCuda compilation tools, release 13.2, V13.2.86\nBuild cuda_13.2.r13.2/compiler.123_0\n"
-        with mock.patch.object(setup, "out", return_value=text):
-            self.assertEqual(setup.nvcc_build("nvcc"), 86)
-        with mock.patch.object(setup, "out", return_value=""):
-            self.assertIsNone(setup.nvcc_build("nvcc"))
 
 
 if __name__ == "__main__":

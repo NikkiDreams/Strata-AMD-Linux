@@ -1,9 +1,10 @@
 # AGENTS.md
 
 Strata runs the Qwen3.8-Flash-Next mixture-of-experts model (and its Coder, Swift 1.5 and Unsloth variants) on a
-normal PC: one NVIDIA or AMD graphics card plus system RAM, on Windows or Linux. It has a C++/CUDA/HIP engine
-(`src/`, `include/`), a Python server with an OpenAI- and Anthropic-compatible API and a web app (`serve/`), and a
-one-click installer (`setup.py`, started by `START-HERE.bat` / `setup.sh`).
+normal PC: one AMD graphics card plus system RAM, on Linux. It has a C++/HIP engine (`src/`, `include/`), a Python
+server with an OpenAI- and Anthropic-compatible API and a web app (`serve/`), and a one-click installer (`setup.py`,
+started by `setup.sh`). This fork is AMD-only on Linux: setup stops with a plain message on a PC with an NVIDIA card
+or on Windows, and the engine is always compiled from this source tree.
 
 ## Installing Strata for a user
 
@@ -17,6 +18,8 @@ offers the same steps as tools.
 - How the engine works, every measured number, the API and all settings: [docs/DETAILS.md](docs/DETAILS.md) and
   the [paper](docs/paper/Strata-Paper.pdf).
 - AMD (HIP) build and validation: [docs/AMD_HIP.md](docs/AMD_HIP.md); multi-GPU: [docs/MULTI_GPU.md](docs/MULTI_GPU.md).
+- The other docs still describe the upstream project's NVIDIA and Windows paths and the numbers measured on those
+  machines. Read them as history: this fork's setup refuses both.
 - Setup's own tests run without a GPU or downloads: `python tools/test_setup_<name>.py` (for example
   `tools/test_setup_amd.py`, `tools/test_setup_choices.py`).
 - Keep the docs' style: plain words, measured numbers with what they were measured on, no claims without a
@@ -27,8 +30,9 @@ offers the same steps as tools.
 - Search the open issues and pull requests first, and add to a thread that already covers your point.
 - Open an issue with the form that fits (bug report, feature request or question).
 - One change per pull request. Say what it changes and what it leaves alone.
-- A new feature is opt-in, and the default path stays byte-identical to the last release. Say how you checked.
-- Build every backend a file touches (CUDA, HIP, SYCL) before asking for review.
+- A new feature is opt-in, and the default path stays byte-identical to the last release of this fork. Say how you
+  checked.
+- Build the HIP backend before asking for review: it is the only one setup compiles here.
 - Change a default only where you measured it faster, and show the numbers with what they were measured on.
 - A report from hardware the maintainers do not have is welcome. Follow
   [docs/COMMUNITY_BENCHMARKS.md](docs/COMMUNITY_BENCHMARKS.md), compare against a same-day run of the build you are

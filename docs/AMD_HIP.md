@@ -1,13 +1,16 @@
 # AMD Radeon: the HIP backend (gfx1100, gfx1101, gfx1200, gfx1201, gfx1030)
 
-Strata runs on AMD Radeon cards through its HIP backend, the same engine as on NVIDIA compiled for AMD. This page
-covers the build on Linux (on Windows a ready-made engine, see [Windows](#windows)) for the RX 7900 XT / XTX (RDNA3, gfx1100) and the
+Strata runs on AMD Radeon cards through its HIP backend, the same engine as on NVIDIA compiled for AMD. This fork runs
+on Linux only and always compiles the engine here for the card; a PC with an NVIDIA card or with Windows is refused
+with a plain message. This page covers that build for the RX 7900 XT / XTX (RDNA3, gfx1100) and the
 RX 9070 / 9070 XT / Radeon AI PRO R9700 (RDNA4, gfx1201; see [RDNA4](#rdna4-gfx1201)). The RX 7800 XT / 7700 XT
 (gfx1101) and the RX 9060 XT (gfx1200) were validated by their owners (see [Community-validated
-cards](#community-validated-cards)); the RX 6800 / 6900 series (RDNA2, gfx1030) builds and runs too, reported by a community machine and not yet validated by the maintainers (see [RDNA2](#rdna2-gfx1030)). Setup chooses it by itself on a PC with no NVIDIA card Strata can use (`--backend hip` on a PC with both); the
-install steps for users are in [INSTALL.md](INSTALL.md#amd-cards). gfx906 (Instinct MI50 / MI60, Radeon VII; wave64) has a separate
-opt-in build, see [gfx906](#gfx906-instinct-mi50--mi60-radeon-vii-wave64-built-from-source). The Ryzen AI Max "Strix Halo" APU (gfx1151, RDNA3.5, unified memory) is built from source on Linux: see [STRIX_HALO.md](STRIX_HALO.md). Other AMD architectures and mixed
-AMD/NVIDIA execution in one run are not supported.
+cards](#community-validated-cards)); the RX 6800 / 6900 series (RDNA2, gfx1030) builds and runs too, reported by a
+community machine and not yet validated by the maintainers (see [RDNA2](#rdna2-gfx1030)). The install steps for users
+are in [INSTALL.md](INSTALL.md#amd-cards). gfx906 (Instinct MI50 / MI60, Radeon VII; wave64) has a separate
+opt-in build, see [gfx906](#gfx906-instinct-mi50--mi60-radeon-vii-wave64-built-from-source). The Ryzen AI Max
+"Strix Halo" APU (gfx1151, RDNA3.5, unified memory) is built from source on Linux:
+see [STRIX_HALO.md](STRIX_HALO.md). Other AMD architectures are not supported.
 
 The backend maps the CUDA-shaped runtime and BLAS calls to HIP/hipBLAS, uses
 RDNA2/RDNA3/RDNA4's signed integer dot instruction for quantized kernels, and supplies
@@ -23,11 +26,11 @@ On Linux with an RX 7900 XT / XTX, RX 7800 XT / 7700 XT, RX 9060 XT, RX 9070 / 9
 the kernel's amdgpu driver (no ROCm install needed):
 
 ```sh
-./setup.sh --backend hip
+./setup.sh
 ```
 
 - **Detection:** setup finds the card through the kernel's KFD topology. Integrated Radeon GPUs are listed as not
-  supported. On a PC without an NVIDIA card Strata can use, `--backend hip` is chosen automatically.
+  supported.
 - **ROCm:** a system ROCm 7 in `/opt/rocm` (or `$ROCM_PATH`) with hipcc and hipBLAS is used when present. Otherwise
   (or when it is older than 7.0) ROCm is installed into `.venv` from AMD's TheRock wheels (~10 GB, no sudo), from the
   card family's index: `gfx110X-dgpu` for gfx1100 / gfx1101, `gfx120X-all` for gfx1200 / gfx1201, `gfx103X-all` for
@@ -43,9 +46,9 @@ the kernel's amdgpu driver (no ROCm install needed):
   card's architecture and the installed hipBLASLt version (read from `hipblaslt-version.h`; 1.2.0 is `100200`).
   Otherwise it says so and the prompt's dense matrix products use plain hipBLAS (slower prompts, same answers).
   A table's solution ids are valid only for that pair, and the engine refuses any other table.
-- **Several cards:** setup takes one card (the one with the most VRAM, or `--gpu N`) unless you name more:
-  `./setup.sh --backend hip --gpus 1,0` splits the model's layers across them, the first one the main card (numbers
-  as setup lists them; `--gpus all` = every supported card, the most VRAM first). Every chosen card must be one of the
+- **Several cards:** setup takes one card (the one with the most memory, or `--gpu N`) unless you name more:
+  `./setup.sh --gpus 1,0` splits the model's layers across them, the first one the main card (numbers as setup lists
+  them; `--gpus all` = every supported card, the most memory first). Every chosen card must be one of the
   architectures above; the engine is compiled for each of them (cards of two families, e.g. gfx1100 + gfx1201, need
   a system ROCm 7: AMD's wheels hold one family). A split pays only when no single card holds the model's experts
   (see RDNA4 below).
@@ -54,72 +57,16 @@ the kernel's amdgpu driver (no ROCm install needed):
   hand (`./setup.sh --calibrate`) is saved for the AMD card it ran on and reused when setup runs again. The Monitor
   shows the card's load, VRAM, temperature and power from Linux sysfs (0.1.32).
 
-The rest of setup is the same as on NVIDIA: the model download, the start script, the server.
+The rest of setup is the model download, the start script, and the server.
 
 ## Windows
 
-Since 0.1.34 an AMD card on Windows is set up like an NVIDIA one: download Strata, double-click `START-HERE.bat`.
-On a PC with no NVIDIA card Strata can use, the AMD card is chosen by itself; with both, setup asks
-(`START-HERE.bat --backend hip` picks AMD directly).
-
-- **You need:** Windows 10 or 11 (64-bit), one of the cards above, and a current AMD driver ([AMD Software:
-  Adrenalin Edition](https://www.amd.com/en/support/download/drivers.html)). Nothing else: no ROCm or HIP SDK
-  install, no compiler, no admin rights.
-- **Detection:** setup reads the display adapters Windows lists (their PCI ids; the VRAM size from the display
-  driver's registry entry). An integrated Radeon is listed as not supported, except the Ryzen AI Max "Strix Halo" (Radeon 8060S / 8050S / 8040S, gfx1151: [STRIX_HALO.md](STRIX_HALO.md)); a Strix Point (890M / 880M, gfx1150), Krackan (860M / 840M, gfx1152) or Phoenix / Hawk Point (780M / 760M, gfx1103) Radeon is named as what it is and not supported.
-- **Engine:** the ready-made `strata-windows-x64-hip.zip` from the release (built by `tools\hip\build_windows.bat`
-  for gfx1100, gfx1101, gfx1102, gfx1200, gfx1201, gfx1030 and, from 0.1.40, gfx1151 (Strix Halo, unvalidated on Windows)) goes into `engine\`. It carries the ROCm libraries the
-  engine loads (`engine\rocm\bin`: the HIP runtime, hipBLAS / rocBLAS / hipBLASLt with their kernels for these cards,
-  amd_comgr and the Microsoft C++ runtime; ROCm 10.2.0a20260930 from AMD's TheRock builds, licenses in
-  `engine\rocm\licenses`). The HIP runtime works through the AMD driver's own components, so the driver is the one
-  thing it needs from the PC.
-- **The HIP runtime next to `strata.exe` (0.1.35, #468 #461):** `amdhip64_7.dll` and `amd_comgr.dll` are also put in
-  `engine\` (setup copies them there on every start). Windows looks in the program's folder before System32, where
-  some AMD drivers install their own `amdhip64_7.dll`; with that one, the bundled libraries crashed on the first
-  prompt (an access violation, or `hipErrorInvalidDeviceFunction`). The engine's log names the runtime it loaded
-  (`strata generate: HIP runtime ...`).
-- **Before the ~60 GB model download** setup runs `engine\strata-device.exe --list-devices` (with `engine\rocm\bin` on
-  the PATH): if the HIP runtime does not see the card, setup stops there and points to the driver. It also gives the
-  card's HIP number: with an integrated Radeon that is device 1, not 0 (#325). From then on setup lists the AMD cards
-  as HIP numbers them, so `--gpu N` and the config's `"gpu"` are HIP numbers.
-- **Differences from Windows-on-NVIDIA and Linux-on-AMD:** no images yet (the CPU image encoder is Linux-only for
-  now), one card per model (`--gpus` is Linux-only for now), no calibration.
-- Two Windows-only engine details (#247, #325): hipBLAS can return success and still leave `hipErrorInvalidValue`
-  set after some BF16/FP16 GEMMs (seen on gfx1201); the engine clears that one stale error after a GEMM that
-  succeeded, on Windows only. `hipHostGetDevicePointer` returns the host pointer itself on Windows: kernels read
-  mapped memory through it correctly, but a device-to-device copy into it does not land, which is why
-  `tests/hip/handoff` times out there (the engine does not use that copy; `tests/hip/mapped_alias` reports it).
-- Two more (#380, #377, by BlueKingMuch, measured on an RX 6800 that drives the desktop): `hipMemGetInfo` on Windows
-  does not subtract what the desktop and other programs hold on the card, so `--expert-cache auto` filled the card
-  past what Windows keeps in VRAM and decode fell from 41 to 30 tok/s. The engine now lowers that free figure by
-  what Windows' video memory budget for the process withholds (logged once: `strata: Windows budgets N of this
-  card's M MiB ...`; `STRATA_WDDM_BUDGET=0` turns it off). And the PCIe probe times its copies on the host clock
-  there, since HIP's events read impossible speeds (3,300-26,000 GB/s), so a slow link now gets a smaller
-  `pcie_frac` as on NVIDIA.
-
-**What is validated (0.1.34):** #325's author ran the engine of this port on an RX 9070 XT (Windows 11, ROCm
-10.2.0a20260930 in `.venv`, compiled on the PC): Coder IQ1_M at 32K, 29.2 tok/s decode, ~181 tok/s prefill,
-correct answers; ctest 42 of 46. The maintainers have no Windows AMD card: the release zip was built on an NVIDIA PC,
-and checked there on the Ryzen CPU's integrated Radeon (gfx1036, a test build of the same tree): with only the zip's
-libraries on the PATH, `strata-device` lists the card and a hipBLAS BF16 GEMM matches the CPU; the HIP ctest passes
-52 of 56, the 4 failures the same as on the RX 9070 XT (`hip_handoff`, and three tests that need a pack fixture).
-The ready-made zip itself has not run a model on a discrete card yet - please report.
-
-**Reporting a Windows AMD run** (an issue, or on #325): your card and driver version (AMD Software > System), then
-
-```bat
-engine\strata-device.exe --list-devices
-engine\strata-device.exe --selftest
-```
-
-(from the Strata folder, after `set PATH=%CD%\engine\rocm\bin;%PATH%`), the end of `strata-<model>.log`, and the
-speed lines the server window prints for a first answer.
-
-**Building it yourself:** `tools\hip\build_windows.bat` (Visual Studio 2022 Build Tools with the C++ workload, Python,
-git; no admin, no AMD GPU) installs ROCm from AMD's TheRock wheels into `.rocm-win`, builds, and packages
-`dist\strata-windows-x64-hip.zip`; `START-HERE.bat --backend hip --prebuilt dist\` installs that one.
-`tools\hip\build_windows.bat tests` also builds the HIP tests (`ctest` in `build-hip-win`, with
-`.rocm-win\Lib\site-packages\_rocm_sdk_devel\bin` on the PATH). `STRATA_HIP_ARCHS` picks other architectures.
+Not supported by this fork: setup stops with a plain message on Windows, and there is no ready-made engine to
+download - the engine is always compiled here for the card. The engine still carries the Windows-only HIP details this
+fork cannot check (#247, #325: hipBLAS can return success and still leave `hipErrorInvalidValue` set after some
+BF16/FP16 GEMMs, seen on gfx1201; `hipHostGetDevicePointer` returns the host pointer itself, which is why
+`tests/hip/handoff` times out there), and the Windows VRAM-budget and PCIe-probe workarounds (#380, #377, measured on
+an RX 6800 that drives the desktop on Windows). Nothing in this section has been run on this fork.
 
 ## Build
 
@@ -430,8 +377,8 @@ run it; the report below is from a community machine: an RX 6900 XT 16 GB (gfx10
 - **gfx1031** (RX 6700 XT, #524): setup knows it (the `gfx103X-all` wheels, unvalidated); its reporter runs it daily
   on one card. More reports: an RX 6700 XT 12 GB run as gfx1030 on ROCm 7.2.4 (#1027: IQ2_XS, decode 30-32 tok/s, prompt about 300 tok/s, 6 of 6
   needles), and an RX 6800M 12 GB on Windows with a self-built engine (#915, #1078: Q2_0, decode 9-27 tok/s, prompt 50-114 tok/s; the
-  experts stream from disk with 31 GB of RAM). The ready-made Windows zip has no gfx1031 code unless it is built with it: `STRATA_HIP_ARCHS=gfx1031`
-  in `tools\hip\build_windows.bat` (the default list has it from 0.1.40.2 on).
+  experts stream from disk with 31 GB of RAM). Here the engine is compiled for gfx1031 by setup (its list has it from
+  0.1.40.2 on).
 - **gfx1150** (Radeon 890M, Ryzen AI 9 HX PRO 370, Strix Point, #1217): builds and runs from 0.1.40.2 as an unvalidated target (CMake warns; the
   device code already covers it: the WMMA guards and `gfx_arch_is_gfx11_wmma()` include it). One community machine: MINISFORUM N5 PRO, 96 GB DDR5-5600, GTT
   raised to 64 GiB (`ttm.pages_limit=16777216 ttm.page_pool_size=16777216`), TheRock ROCm 7.14.1 for gfx1150, an unprivileged LXC container, IQ3_XXS: chat and
@@ -501,7 +448,7 @@ kernels, plus the layer-split weight trim and the mapped arena, which are separa
 
 For comparison on the same machine: llama.cpp (3cf0325, ROCm) on the same Coder IQ1_M measured 26.9 tok/s `tg128`.
 
-**Not done:** setup.py detection and an automatic build, Windows, images (`--vision`), MI60 and Radeon VII (the
+**Not done:** setup.py detection and an automatic build, images (`--vision cpu`), MI60 and Radeon VII (the
 same gfx906 ISA; not run), a single-card run, the tensor-split experiment (the halves of every layer on two cards;
 it works but is not part of this build).
 

@@ -28,12 +28,11 @@
     "--kv-resident",
     "32768"
    ],
+   "backend": "hip",
    "cwd": "<T>",
    "exe": "<T>/engine/<EXE>",
-   "gpu": 0,
-   "gpus_asked": true,
    "lib_dirs": [
-    "<cuda>"
+    "<rocm>"
    ],
    "log": "<T>/strata-iq3_s.log",
    "model_name": "qwen3.8-flash-next-iq3_s",
@@ -70,12 +69,11 @@
     "--kv-resident",
     "32768"
    ],
+   "backend": "hip",
    "cwd": "<T>",
    "exe": "<T>/engine/<EXE>",
-   "gpu": 0,
-   "gpus_asked": true,
    "lib_dirs": [
-    "<cuda>"
+    "<rocm>"
    ],
    "log": "<T>/strata-iq3_xxs.log",
    "model_name": "qwen3.8-flash-next-iq3_xxs",
@@ -112,12 +110,11 @@
     "--kv-resident",
     "32768"
    ],
+   "backend": "hip",
    "cwd": "<T>",
    "exe": "<T>/engine/<EXE>",
-   "gpu": 0,
-   "gpus_asked": true,
    "lib_dirs": [
-    "<cuda>"
+    "<rocm>"
    ],
    "log": "<T>/strata-q2_0.log",
    "model_name": "qwen3.8-flash-next-q2_0",
@@ -154,12 +151,11 @@
     "--kv-resident",
     "32768"
    ],
+   "backend": "hip",
    "cwd": "<T>",
    "exe": "<T>/engine/<EXE>",
-   "gpu": 0,
-   "gpus_asked": true,
    "lib_dirs": [
-    "<cuda>"
+    "<rocm>"
    ],
    "log": "<T>/strata-iq3_xxs.log",
    "model_name": "qwen3.8-flash-next-iq3_xxs",
@@ -167,14 +163,14 @@
    "tokenizer": "<T>/data/packs/iq3_xxs/tokenizer"
   }
  },
- "128GB-1x24GB unsloth UD-Q4_K_XL": {
+ "128GB-1x24GB unsloth UD-IQ4_XS": {
   "code": 0,
   "config": {
    "args": [
     "--pack",
-    "<T>/data/packs/unsloth-ud-q4_k_xl",
+    "<T>/data/packs/unsloth-ud-iq4_xs",
     "--native",
-    "<T>/models/unsloth-UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf",
+    "<T>/models/unsloth-UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf",
     "--expert-profile",
     "<T>/data/expert-profile.bin",
     "--expert-cache",
@@ -192,19 +188,18 @@
     "--kv",
     "int8",
     "--resident-budget-gib",
-    "71"
+    "55"
    ],
+   "backend": "hip",
    "cwd": "<T>",
    "exe": "<T>/engine/<EXE>",
-   "gpu": 0,
-   "gpus_asked": true,
    "lib_dirs": [
-    "<cuda>"
+    "<rocm>"
    ],
-   "log": "<T>/strata-unsloth-ud-q4_k_xl.log",
-   "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
+   "log": "<T>/strata-unsloth-ud-iq4_xs.log",
+   "model_name": "qwen3.8-flash-next-unsloth-ud-iq4_xs",
    "port": 8080,
-   "tokenizer": "<T>/data/packs/unsloth-ud-q4_k_xl/tokenizer"
+   "tokenizer": "<T>/data/packs/unsloth-ud-iq4_xs/tokenizer"
   }
  },
  "32GB-2x24GB qwen IQ3_S": {
@@ -233,18 +228,15 @@
     "131072",
     "--kv",
     "int8",
-    "--resident-experts"
+    "--mmap-experts"
    ],
+   "backend": "hip",
    "cwd": "<T>",
    "exe": "<T>/engine/<EXE>",
-   "gpu": [
-    0,
-    1
-   ],
+   "gpu": 0,
    "gpus_asked": true,
-   "layer_split": "auto",
    "lib_dirs": [
-    "<cuda>"
+    "<rocm>"
    ],
    "log": "<T>/strata-iq3_s.log",
    "model_name": "qwen3.8-flash-next-iq3_s",
@@ -278,18 +270,15 @@
     "131072",
     "--kv",
     "int8",
-    "--resident-experts"
+    "--mmap-experts"
    ],
+   "backend": "hip",
    "cwd": "<T>",
    "exe": "<T>/engine/<EXE>",
-   "gpu": [
-    0,
-    1
-   ],
+   "gpu": 0,
    "gpus_asked": true,
-   "layer_split": "auto",
    "lib_dirs": [
-    "<cuda>"
+    "<rocm>"
    ],
    "log": "<T>/strata-iq3_xxs.log",
    "model_name": "qwen3.8-flash-next-iq3_xxs",
@@ -325,16 +314,13 @@
     "int8",
     "--resident-experts"
    ],
+   "backend": "hip",
    "cwd": "<T>",
    "exe": "<T>/engine/<EXE>",
-   "gpu": [
-    0,
-    1
-   ],
+   "gpu": 0,
    "gpus_asked": true,
-   "layer_split": "auto",
    "lib_dirs": [
-    "<cuda>"
+    "<rocm>"
    ],
    "log": "<T>/strata-q2_0.log",
    "model_name": "qwen3.8-flash-next-q2_0",
@@ -370,16 +356,13 @@
     "int8",
     "--resident-experts"
    ],
+   "backend": "hip",
    "cwd": "<T>",
    "exe": "<T>/engine/<EXE>",
-   "gpu": [
-    0,
-    1
-   ],
+   "gpu": 0,
    "gpus_asked": true,
-   "layer_split": "auto",
    "lib_dirs": [
-    "<cuda>"
+    "<rocm>"
    ],
    "log": "<T>/strata-q2_0.log",
    "model_name": "qwen3.8-flash-next-q2_0",
@@ -387,14 +370,14 @@
    "tokenizer": "<T>/data/packs/q2_0/tokenizer"
   }
  },
- "32GB-2x24GB unsloth UD-Q4_K_XL": {
+ "32GB-2x24GB unsloth UD-IQ4_XS": {
   "code": 0,
   "config": {
    "args": [
     "--pack",
-    "<T>/data/packs/unsloth-ud-q4_k_xl",
+    "<T>/data/packs/unsloth-ud-iq4_xs",
     "--native",
-    "<T>/models/unsloth-UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf",
+    "<T>/models/unsloth-UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf",
     "--expert-profile",
     "<T>/data/expert-profile.bin",
     "--expert-cache",
@@ -414,17 +397,18 @@
     "--resident-budget-gib",
     "8"
    ],
+   "backend": "hip",
    "cwd": "<T>",
    "exe": "<T>/engine/<EXE>",
    "gpu": 0,
    "gpus_asked": true,
    "lib_dirs": [
-    "<cuda>"
+    "<rocm>"
    ],
-   "log": "<T>/strata-unsloth-ud-q4_k_xl.log",
-   "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
+   "log": "<T>/strata-unsloth-ud-iq4_xs.log",
+   "model_name": "qwen3.8-flash-next-unsloth-ud-iq4_xs",
    "port": 8080,
-   "tokenizer": "<T>/data/packs/unsloth-ud-q4_k_xl/tokenizer"
+   "tokenizer": "<T>/data/packs/unsloth-ud-iq4_xs/tokenizer"
   }
  },
  "47GB-2x16GB qwen IQ3_S": {
@@ -453,18 +437,15 @@
     "65536",
     "--kv",
     "int8",
-    "--resident-experts"
+    "--mmap-experts"
    ],
+   "backend": "hip",
    "cwd": "<T>",
    "exe": "<T>/engine/<EXE>",
-   "gpu": [
-    0,
-    1
-   ],
+   "gpu": 0,
    "gpus_asked": true,
-   "layer_split": "auto",
    "lib_dirs": [
-    "<cuda>"
+    "<rocm>"
    ],
    "log": "<T>/strata-iq3_s.log",
    "model_name": "qwen3.8-flash-next-iq3_s",
@@ -500,16 +481,13 @@
     "int8",
     "--resident-experts"
    ],
+   "backend": "hip",
    "cwd": "<T>",
    "exe": "<T>/engine/<EXE>",
-   "gpu": [
-    0,
-    1
-   ],
+   "gpu": 0,
    "gpus_asked": true,
-   "layer_split": "auto",
    "lib_dirs": [
-    "<cuda>"
+    "<rocm>"
    ],
    "log": "<T>/strata-iq3_xxs.log",
    "model_name": "qwen3.8-flash-next-iq3_xxs",
@@ -544,16 +522,13 @@
     "--kv",
     "int8"
    ],
+   "backend": "hip",
    "cwd": "<T>",
    "exe": "<T>/engine/<EXE>",
-   "gpu": [
-    0,
-    1
-   ],
+   "gpu": 0,
    "gpus_asked": true,
-   "layer_split": "auto",
    "lib_dirs": [
-    "<cuda>"
+    "<rocm>"
    ],
    "log": "<T>/strata-q2_0.log",
    "model_name": "qwen3.8-flash-next-q2_0",
@@ -588,16 +563,13 @@
     "--kv",
     "int8"
    ],
+   "backend": "hip",
    "cwd": "<T>",
    "exe": "<T>/engine/<EXE>",
-   "gpu": [
-    0,
-    1
-   ],
+   "gpu": 0,
    "gpus_asked": true,
-   "layer_split": "auto",
    "lib_dirs": [
-    "<cuda>"
+    "<rocm>"
    ],
    "log": "<T>/strata-q2_0.log",
    "model_name": "qwen3.8-flash-next-q2_0",
@@ -605,14 +577,14 @@
    "tokenizer": "<T>/data/packs/q2_0/tokenizer"
   }
  },
- "47GB-2x16GB unsloth UD-Q4_K_XL": {
+ "47GB-2x16GB unsloth UD-IQ4_XS": {
   "code": 0,
   "config": {
    "args": [
     "--pack",
-    "<T>/data/packs/unsloth-ud-q4_k_xl",
+    "<T>/data/packs/unsloth-ud-iq4_xs",
     "--native",
-    "<T>/models/unsloth-UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf",
+    "<T>/models/unsloth-UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf",
     "--expert-profile",
     "<T>/data/expert-profile.bin",
     "--expert-cache",
@@ -632,17 +604,18 @@
     "--resident-budget-gib",
     "23"
    ],
+   "backend": "hip",
    "cwd": "<T>",
    "exe": "<T>/engine/<EXE>",
    "gpu": 0,
    "gpus_asked": true,
    "lib_dirs": [
-    "<cuda>"
+    "<rocm>"
    ],
-   "log": "<T>/strata-unsloth-ud-q4_k_xl.log",
-   "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
+   "log": "<T>/strata-unsloth-ud-iq4_xs.log",
+   "model_name": "qwen3.8-flash-next-unsloth-ud-iq4_xs",
    "port": 8080,
-   "tokenizer": "<T>/data/packs/unsloth-ud-q4_k_xl/tokenizer"
+   "tokenizer": "<T>/data/packs/unsloth-ud-iq4_xs/tokenizer"
   }
  },
  "64GB-1x32GB qwen IQ3_S": {
@@ -672,12 +645,11 @@
     "--kv",
     "int8"
    ],
+   "backend": "hip",
    "cwd": "<T>",
    "exe": "<T>/engine/<EXE>",
-   "gpu": 0,
-   "gpus_asked": true,
    "lib_dirs": [
-    "<cuda>"
+    "<rocm>"
    ],
    "log": "<T>/strata-iq3_s.log",
    "model_name": "qwen3.8-flash-next-iq3_s",
@@ -714,12 +686,11 @@
     "--kv-resident",
     "32768"
    ],
+   "backend": "hip",
    "cwd": "<T>",
    "exe": "<T>/engine/<EXE>",
-   "gpu": 0,
-   "gpus_asked": true,
    "lib_dirs": [
-    "<cuda>"
+    "<rocm>"
    ],
    "log": "<T>/strata-iq3_xxs.log",
    "model_name": "qwen3.8-flash-next-iq3_xxs",
@@ -756,12 +727,11 @@
     "--kv-resident",
     "32768"
    ],
+   "backend": "hip",
    "cwd": "<T>",
    "exe": "<T>/engine/<EXE>",
-   "gpu": 0,
-   "gpus_asked": true,
    "lib_dirs": [
-    "<cuda>"
+    "<rocm>"
    ],
    "log": "<T>/strata-q2_0.log",
    "model_name": "qwen3.8-flash-next-q2_0",
@@ -798,12 +768,11 @@
     "--kv-resident",
     "32768"
    ],
+   "backend": "hip",
    "cwd": "<T>",
    "exe": "<T>/engine/<EXE>",
-   "gpu": 0,
-   "gpus_asked": true,
    "lib_dirs": [
-    "<cuda>"
+    "<rocm>"
    ],
    "log": "<T>/strata-iq3_xxs.log",
    "model_name": "qwen3.8-flash-next-iq3_xxs",
@@ -811,14 +780,14 @@
    "tokenizer": "<T>/data/packs/iq3_xxs/tokenizer"
   }
  },
- "64GB-1x32GB unsloth UD-Q4_K_XL": {
+ "64GB-1x32GB unsloth UD-IQ4_XS": {
   "code": 0,
   "config": {
    "args": [
     "--pack",
-    "<T>/data/packs/unsloth-ud-q4_k_xl",
+    "<T>/data/packs/unsloth-ud-iq4_xs",
     "--native",
-    "<T>/models/unsloth-UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf",
+    "<T>/models/unsloth-UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf",
     "--expert-profile",
     "<T>/data/expert-profile.bin",
     "--expert-cache",
@@ -838,17 +807,16 @@
     "--resident-budget-gib",
     "40"
    ],
+   "backend": "hip",
    "cwd": "<T>",
    "exe": "<T>/engine/<EXE>",
-   "gpu": 0,
-   "gpus_asked": true,
    "lib_dirs": [
-    "<cuda>"
+    "<rocm>"
    ],
-   "log": "<T>/strata-unsloth-ud-q4_k_xl.log",
-   "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
+   "log": "<T>/strata-unsloth-ud-iq4_xs.log",
+   "model_name": "qwen3.8-flash-next-unsloth-ud-iq4_xs",
    "port": 8080,
-   "tokenizer": "<T>/data/packs/unsloth-ud-q4_k_xl/tokenizer"
+   "tokenizer": "<T>/data/packs/unsloth-ud-iq4_xs/tokenizer"
   }
  },
  "96GB-1x16GB qwen IQ3_S": {
@@ -880,12 +848,11 @@
     "--kv-resident",
     "32768"
    ],
+   "backend": "hip",
    "cwd": "<T>",
    "exe": "<T>/engine/<EXE>",
-   "gpu": 0,
-   "gpus_asked": true,
    "lib_dirs": [
-    "<cuda>"
+    "<rocm>"
    ],
    "log": "<T>/strata-iq3_s.log",
    "model_name": "qwen3.8-flash-next-iq3_s",
@@ -922,12 +889,11 @@
     "--kv-resident",
     "32768"
    ],
+   "backend": "hip",
    "cwd": "<T>",
    "exe": "<T>/engine/<EXE>",
-   "gpu": 0,
-   "gpus_asked": true,
    "lib_dirs": [
-    "<cuda>"
+    "<rocm>"
    ],
    "log": "<T>/strata-iq3_xxs.log",
    "model_name": "qwen3.8-flash-next-iq3_xxs",
@@ -964,12 +930,11 @@
     "--kv-resident",
     "32768"
    ],
+   "backend": "hip",
    "cwd": "<T>",
    "exe": "<T>/engine/<EXE>",
-   "gpu": 0,
-   "gpus_asked": true,
    "lib_dirs": [
-    "<cuda>"
+    "<rocm>"
    ],
    "log": "<T>/strata-q2_0.log",
    "model_name": "qwen3.8-flash-next-q2_0",
@@ -1006,12 +971,11 @@
     "--kv-resident",
     "32768"
    ],
+   "backend": "hip",
    "cwd": "<T>",
    "exe": "<T>/engine/<EXE>",
-   "gpu": 0,
-   "gpus_asked": true,
    "lib_dirs": [
-    "<cuda>"
+    "<rocm>"
    ],
    "log": "<T>/strata-iq3_xxs.log",
    "model_name": "qwen3.8-flash-next-iq3_xxs",
@@ -1019,14 +983,14 @@
    "tokenizer": "<T>/data/packs/iq3_xxs/tokenizer"
   }
  },
- "96GB-1x16GB unsloth UD-Q4_K_XL": {
+ "96GB-1x16GB unsloth UD-IQ4_XS": {
   "code": 0,
   "config": {
    "args": [
     "--pack",
-    "<T>/data/packs/unsloth-ud-q4_k_xl",
+    "<T>/data/packs/unsloth-ud-iq4_xs",
     "--native",
-    "<T>/models/unsloth-UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf",
+    "<T>/models/unsloth-UD-IQ4_XS/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf",
     "--expert-profile",
     "<T>/data/expert-profile.bin",
     "--expert-cache",
@@ -1044,19 +1008,18 @@
     "--kv",
     "int8",
     "--resident-budget-gib",
-    "71"
+    "55"
    ],
+   "backend": "hip",
    "cwd": "<T>",
    "exe": "<T>/engine/<EXE>",
-   "gpu": 0,
-   "gpus_asked": true,
    "lib_dirs": [
-    "<cuda>"
+    "<rocm>"
    ],
-   "log": "<T>/strata-unsloth-ud-q4_k_xl.log",
-   "model_name": "qwen3.8-flash-next-unsloth-ud-q4_k_xl",
+   "log": "<T>/strata-unsloth-ud-iq4_xs.log",
+   "model_name": "qwen3.8-flash-next-unsloth-ud-iq4_xs",
    "port": 8080,
-   "tokenizer": "<T>/data/packs/unsloth-ud-q4_k_xl/tokenizer"
+   "tokenizer": "<T>/data/packs/unsloth-ud-iq4_xs/tokenizer"
   }
  }
 }
