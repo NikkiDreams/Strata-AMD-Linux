@@ -348,6 +348,13 @@ def mark(path: Path, text=""):
         warn(f"the finish mark of {path.name} cannot be written ({e}): the next run does this step again")
 
 
+def drop_archive(path: Path) -> None:
+    """A downloaded archive and its finish mark go together: a damaged one kept with its mark makes every
+    later run say "already downloaded" and reuse it instead of the published file (#1797)."""
+    path.unlink(missing_ok=True)
+    path.with_name(path.name + ".done").unlink(missing_ok=True)
+
+
 # ------------------------------------------------------------------------------------------------ the PC
 def ram_gb():
     for line in open("/proc/meminfo"):
@@ -877,9 +884,18 @@ def get_llama_cpp():
     download(LLAMA_CPP_ZIP, z, "llama.cpp source")
     tmp = ROOT / "third_party" / "_unpack"
     shutil.rmtree(tmp, ignore_errors=True)
-    with zipfile.ZipFile(z) as f:
-        # llama.cpp's own web UI (tools/ui) is not used, so it is not unpacked (#206)
-        f.extractall(tmp, [m for m in f.namelist() if "/tools/ui/" not in m])
+    try:
+        with zipfile.ZipFile(z) as f:
+            # llama.cpp's own web UI (tools/ui) is not used, so it is not unpacked (#206)
+            f.extractall(tmp, [m for m in f.namelist() if "/tools/ui/" not in m])
+    except zipfile.BadZipFile:
+        # #1797: do not let the .done mark make every later run reuse a damaged source archive.
+        # Only a bad archive is dropped: a PermissionError or a disk error here leaves a good one in place.
+        try:
+            drop_archive(z)
+        except OSError as e:
+            warn(f"cannot remove damaged {z.name} ({e}): delete it and its .done mark before running setup again")
+        raise
     top = next(tmp.iterdir())
     shutil.rmtree(llama, ignore_errors=True)
     # PR #63: a rename can fail with PermissionError while a scanner still holds a file of the fresh unpack;
@@ -895,8 +911,7 @@ def get_llama_cpp():
             shutil.rmtree(llama, ignore_errors=True)   # a partial copy from the failed attempt
             time.sleep(2)
     shutil.rmtree(tmp, ignore_errors=True)
-    z.unlink(missing_ok=True)
-    z.with_name(z.name + ".done").unlink(missing_ok=True)
+    drop_archive(z)                                  # unpacked: the zip and its mark are not kept
     return llama
 
 
