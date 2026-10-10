@@ -206,13 +206,14 @@ class SetupIntegration(unittest.TestCase):
         os.environ["XDG_CONFIG_HOME"] = self.tmp.name
         import setup as S
         self.S = S
-        self.saved = (S.gpu_info, S.cpu_info, S.ram_gb, CAL.run)
-        S.gpu_info = lambda pick=None: {"name": "RTX Test", "vram_gb": 12.0, "arch": "120", "count": 1, "index": 0}
+        self.saved = (S.amd_gpus, S.cpu_info, S.ram_gb, CAL.run)
+        S.amd_gpus = lambda: [{"index": 0, "name": "AMD Radeon RX Test", "vram_gb": 12.0, "arch": "gfx1102",
+                               "driver": "amdgpu", "vendor": "amd"}]
         S.cpu_info = lambda: ("Test CPU", True, True)
         S.ram_gb = lambda: 64.0
 
     def tearDown(self):
-        self.S.gpu_info, self.S.cpu_info, self.S.ram_gb, CAL.run = self.saved
+        self.S.amd_gpus, self.S.cpu_info, self.S.ram_gb, CAL.run = self.saved
         for k, v in self.old.items():
             if v is None:
                 os.environ.pop(k, None)
@@ -269,7 +270,6 @@ class SetupIntegration(unittest.TestCase):
         out = io.StringIO()
         with mock.patch.object(self.S, "ROOT", Path(self.tmp.name)), \
                 mock.patch.object(self.S, "data_folder", lambda d: (Path(self.tmp.name) / "data", [])), \
-                mock.patch.object(self.S, "update_installed_engine", lambda *a: None), \
                 mock.patch.object(sys, "argv", ["setup.py", "--calibrate", "--no-start"]), \
                 contextlib.redirect_stdout(out):
             self.assertEqual(self.S.main(), 0)

@@ -2,7 +2,8 @@
 
     python tools/test_dll_closure.py          (the real-zip test skips when the 0.1.40.2 HIP zip is not here)
 
-Covers tools/hip/dll_closure.py and setup.hip_runtime_beside_exe on a fake engine folder.
+Covers tools/hip/dll_closure.py on a fake engine folder. The setup copy of the closure was the Windows
+install's (the DLLs beside strata.exe); this fork is Linux-only, so that part and its tests are gone.
 """
 import os
 import struct
@@ -110,45 +111,6 @@ class Closure(unittest.TestCase):
             self.assertEqual(sorted(got), ["amd_comgr.dll", "amdhip64_7.dll", "msvcp140.dll", "rocm_kpack.dll",
                                            "vcruntime140.dll", "vcruntime140_1.dll"])
             self.assertNotIn("hipblas.dll", got)            # strata.exe loads that one from rocm/bin by PATH
-
-
-class SetupCopy(unittest.TestCase):
-    def test_copies_the_closure_not_the_rest(self):
-        import json
-        with tempfile.TemporaryDirectory() as d:
-            eng = Path(d)
-            rb = eng / "rocm" / "bin"
-            rb.mkdir(parents=True)
-            (eng / "BUILD.json").write_text(json.dumps({"backend": "hip", "lib_dirs": ["rocm/bin"]}))
-            (rb / "amdhip64_7.dll").write_bytes(fake_pe(["KERNEL32.dll", "rocm_kpack.dll"]))
-            (rb / "rocm_kpack.dll").write_bytes(fake_pe(["MSVCP140.dll", "VCRUNTIME140.dll", "VCRUNTIME140_1.dll"]))
-            for n in ("msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll"):
-                (rb / n).write_bytes(fake_pe(["KERNEL32.dll"]))
-            (rb / "amd_comgr.dll").write_bytes(fake_pe(["msvcp140.dll"]))
-            (rb / "rocblas.dll").write_bytes(fake_pe(["amdhip64_7.dll"]))
-            (rb / "hipblas.dll").write_bytes(fake_pe(["rocblas.dll"]))
-            # a 0.1.40.2 install: the two runtime DLLs beside the exe, and nothing else
-            (eng / "amdhip64_7.dll").write_bytes((rb / "amdhip64_7.dll").read_bytes())
-            with mock.patch.object(setup, "warn", lambda *a: None):
-                setup.hip_runtime_beside_exe(eng)
-            beside = sorted(p.name for p in eng.glob("*.dll"))
-            self.assertEqual(beside, ["amd_comgr.dll", "amdhip64_7.dll", "msvcp140.dll", "rocm_kpack.dll",
-                                      "vcruntime140.dll", "vcruntime140_1.dll"])
-            self.assertFalse((eng / "rocblas.dll").exists())
-            self.assertFalse((eng / "hipblas.dll").exists())
-            before = {p.name: p.stat().st_mtime_ns for p in eng.glob("*.dll")}
-            with mock.patch.object(setup, "warn", lambda *a: None):
-                setup.hip_runtime_beside_exe(eng)           # a second run changes nothing
-            self.assertEqual(before, {p.name: p.stat().st_mtime_ns for p in eng.glob("*.dll")})
-
-    def test_unreadable_helper_falls_back_to_the_runtime_pair(self):
-        with tempfile.TemporaryDirectory() as d:
-            d = Path(d)
-            (d / "amdhip64_7.dll").write_bytes(b"x")
-            (d / "amd_comgr.dll").write_bytes(b"y")
-            (d / "rocm_kpack.dll").write_bytes(b"z")
-            with mock.patch.object(setup, "ROOT", d):        # no tools/hip/dll_closure.py under this root
-                self.assertEqual(setup.hip_runtime_closure(d), ["amd_comgr.dll", "amdhip64_7.dll"])
 
 
 if __name__ == "__main__":

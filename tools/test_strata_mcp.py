@@ -303,8 +303,8 @@ class Validation(FakeRoot):
         res, err = self.call("strata_install", {"family": "swift", "model": "IQ3_S"})
         self.assertFalse(err, res)                      # Swift 1.5 got its IQ3_S (same shard layout as its IQ2_XS)
         self.assertIn("--family swift --model IQ3_S", res["plan"]["setup_command"])
-        res, err = self.call("strata_install", {"family": "unsloth", "model": "UD-Q4_K_XL", "vision": "yes"})
-        self.assertFalse(err, res)                      # #967: images are allowed with UD-Q4_K_XL (setup warns)
+        res, err = self.call("strata_install", {"family": "unsloth", "model": "UD-IQ4_XS", "vision": "yes"})
+        self.assertFalse(err, res)                      # images are allowed with the Unsloth pack
         self.assertEqual(res["plan"]["images"], "yes")
         self.assertRejected("strata_install", {"vision": "yes\nrm"}, "control characters")
 
@@ -573,21 +573,18 @@ class Helpers(unittest.TestCase):
         self.assertEqual(list(S.CONTEXTS), M.FALLBACK_CONTEXTS)
 
     def test_unsloth_sizes(self):
-        """0.1.39: UD-IQ4_XS is a regular size, listed first (the family's default); UD-Q4_K_XL stays experimental."""
+        """0.1.39: UD-IQ4_XS is a regular size, listed first (the family's default); this fork's menu has only it."""
         s = M.Strata(HERE.parent)
         for models in (s.tables()[0], M.FALLBACK_MODELS):
-            self.assertEqual(s.sizes_of(models, "unsloth"), ["UD-IQ4_XS", "UD-Q4_K_XL"])
+            self.assertEqual(s.sizes_of(models, "unsloth"), ["UD-IQ4_XS"])
             self.assertFalse(models["UD-IQ4_XS"].get("experimental"))
-            self.assertTrue(models["UD-Q4_K_XL"].get("experimental"))
         self.assertEqual(s.sizes_of(M.FALLBACK_MODELS, "qwen"), ["Q2_0", "IQ2_XS", "IQ3_XXS", "IQ3_S"])
         fam = next(f for f in s.model_table({"ram_gb": 63.7, "gpus": []}) if f["family"] == "unsloth")
         self.assertFalse(fam["experimental"])
         self.assertTrue(fam["images"])
         by = {x["model"]: x for x in fam["sizes"]}
         self.assertEqual((by["UD-IQ4_XS"]["experimental"], by["UD-IQ4_XS"]["images"]), (False, True))
-        self.assertEqual((by["UD-Q4_K_XL"]["experimental"], by["UD-Q4_K_XL"]["images"]), (True, True))   # #967
         self.assertFalse(by["UD-IQ4_XS"]["on_this_pc"].startswith("experimental"))
-        self.assertTrue(by["UD-Q4_K_XL"]["on_this_pc"].startswith("experimental"))
 
     def test_recommendation_follows_ram(self):
         s = M.Strata(HERE.parent)
