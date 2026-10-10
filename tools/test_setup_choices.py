@@ -123,6 +123,31 @@ class GgufDirUnsupported(unittest.TestCase):
         self.assertIn("Strata runs ISTA-DASLab's GSQ-RCO files", out)
 
 
+class FamilySizes(unittest.TestCase):
+    """Which sizes setup's menu gives each family: Swift 1.5 has an IQ3_S tier of its own (#1651), and its Q2_0 stays
+    out because the pack tool cannot prepare its shards (#171)."""
+
+    def sizes(self, family):
+        return sorted(m for m in setup.MODELS if family in setup.MODELS[m].get("families", ("qwen", "swift")))
+
+    def test_swift_has_iq3_s_now(self):
+        self.assertEqual(self.sizes("swift"), ["IQ2_XS", "IQ3_S", "IQ3_XXS"])
+
+    def test_q2_0_stays_the_original_only(self):
+        self.assertEqual(self.sizes("qwen"), ["IQ2_XS", "IQ3_S", "IQ3_XXS", "Q2_0"])
+
+    def test_the_pinned_swift_revision_has_its_iq3_s_files(self):
+        """#1651: the tier came on 2026-10-07, after the revision setup pinned on 2026-09-24, so the pin is that
+        commit - otherwise every IQ3_S download falls back to the repository's current files with a warning (#214)."""
+        repo = "ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF"
+        self.assertEqual(setup.HF_REVISIONS[repo], "99bb8f7f95c7aa7b24a36a7786a4f657b30f5d3d")
+        fam = setup.FAMILIES["swift"]
+        for i in (1, 2):
+            name = setup.model_file(fam, "IQ3_S", i)
+            self.assertTrue(name.startswith("Swift-Qwen3.8-Flash-Next-GSQ-RCO-IQ3_S-"))
+        self.assertEqual(setup.model_shards(fam), 2)
+
+
 class ReadOnlyGgufDir(unittest.TestCase):
     """--gguf-dir on a read-only folder (a share): whole shards without a finish mark still install, with a warning."""
 

@@ -63,7 +63,8 @@ ROOT = Path(__file__).resolve().parent
 # day.  A revision the repository no longer has falls back to its current files, with a message (download()).
 HF_REVISIONS = {
     "ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF": "ed59f92082b1e93c0e96d60a8b11aab089b52f09",        # 2026-09-29
-    "ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF": "b22d729eae29b5796f76fb70f91aef549b9fc52c",   # 2026-09-24
+    "ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF": "99bb8f7f95c7aa7b24a36a7786a4f657b30f5d3d",   # 2026-10-07:
+    # the commit that added Swift's IQ3_S tier (#1651); its other files are the same as 2026-09-24's
     "ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-Coder-GGUF": "5348543e0147355ac9cbcb031184a3546350988e",  # 2026-09-29
     "unsloth/Qwen3.8-Flash-Next-GGUF": "38bb39ee97821de2c9009abb7e93950eec396e66",                   # 2026-09-30
 }
@@ -178,10 +179,10 @@ MODELS = {
                "arena_gb": 35.5},
     "IQ3_XXS": {"about": "3-bit i-quant, better quality, slower (more CPU work per token)", "download_gb": 75.8,
                 "ram_gb": 60, "arena_gb": 42.9},
-    # the original model only (Swift 1.5 has no IQ3_S): matches the full BF16 model on the published benchmarks
+    # matches the full BF16 model on the published benchmarks; Swift 1.5 has an IQ3_S tier of its own (#1651).
+    # 83.6 GB is the original's (its pinned revision); Swift's own files at its revision are 83.7 GB.
     "IQ3_S": {"about": "3.5-bit i-quant, the best quality (matches the full model), the slowest; needs a 64 GB PC "
-                       "with little else running", "download_gb": 83.6, "ram_gb": 62, "arena_gb": 50.3,
-              "families": ("qwen",)},
+                       "with little else running", "download_gb": 83.6, "ram_gb": 62, "arena_gb": 50.3},
     # the Coder release: 256 of the 512 experts kept (the ones code, tools and vision use), IQ2_S-IQ4_XS like IQ3_S
     "IQ1_M": {"about": "the Coder's only size: half the experts, stored like IQ3_S (3.5 bits)", "download_gb": 58.4,
               "ram_gb": 32, "arena_gb": 23.4, "families": ("coder",)},

@@ -110,11 +110,12 @@ START-HERE.bat --setup --family coder
 
 **[Swift 1.5](https://huggingface.co/ukisai/Swift-1.5-Qwen3.8-Flash-Next-GSQ-RCO-GGUF)** - a fine-tune by UkisAI that
 thinks much shorter before answering, so you get the answer sooner, with about the same quality. Same speed per
-token, and about the same RAM as the same size of the original. Its own license applies (see its page).
+token, and about the same RAM as the same size of the original. Its own license applies (see its page). Setup's menu
+gives it IQ2_XS, IQ3_XXS and IQ3_S (its IQ3_S tier was added on 2026-10-07, #1651; its own IQ3_S files are 83.7 GB).
 More: [details](DETAILS.md#or-swift-15-a-fine-tune-that-thinks-shorter).
 
 ```
-START-HERE.bat --setup --family swift --model IQ2_XS
+./setup.sh --setup --family swift --model IQ2_XS
 ```
 
 ### Unsloth UD-IQ4_XS
