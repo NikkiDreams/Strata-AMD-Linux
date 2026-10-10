@@ -34,6 +34,16 @@ RESIDENT_BUDGET_GIB="${RESIDENT_BUDGET_GIB:-}"   # UD-Q4_K_XL: GiB of experts ke
 KV_STREAMING="${KV_STREAMING:-}" # auto | on | off; empty: setup.py's own default (auto)
 CONFIG="${CONFIG:-}"            # a config file to start with (wins over MODEL's /data/config/strata-<model>.json)
 
+# SECURITY.md and AGENTS.md: the server is open to the network only with an API key.  In a container a published
+# port reaches the server through the container's own address, so HOST has to be outside loopback here - exactly the
+# case that needs a key (a loopback bind inside a container is not reachable through a published port).  Refuse
+# rather than serve open: this is the path a PC on a network takes, and the server alone only warns.
+if [ -z "$API_KEY" ] && [ "$HOST" != "127.0.0.1" ] && [ "$HOST" != "localhost" ] && [ "$HOST" != "::1" ]; then
+  echo "Refusing to serve beyond loopback without an API key (HOST=$HOST, API_KEY is empty)." >&2
+  echo "  Set API_KEY=<any string>, or keep the server on loopback (HOST=127.0.0.1) and do not publish the port." >&2
+  exit 1
+fi
+
 # setup.py starts the newest strata-*.json it finds, so link in exactly the one
 # this family and model were set up with. The config is the recorded output of
 # that setup (the pack, the profile, the quant, the KV decision), not settings

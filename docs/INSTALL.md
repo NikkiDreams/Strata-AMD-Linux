@@ -98,7 +98,11 @@ The same idea, in a container (NVIDIA cards).
    The default covers RTX 30 (86), RTX 40 (89), RTX 50 (120) and A-series (80); a card outside that
    set needs a rebuild with its own arch. Add `--build-arg BUILD_VISION=0` to skip the image encoder.
 3. Run (the first start downloads the ~70 GB model, then starts; later starts go straight to serving):
-   `docker run --rm --gpus all -p 8080:8080 --ulimit memlock=-1 -v strata-data:/data strata`
+   `docker run --rm --gpus all -p 127.0.0.1:8080:8080 -e API_KEY=<any string> --ulimit memlock=-1 -v strata-data:/data strata`
+
+   `API_KEY` is not optional: a published port reaches the server from outside the container, and Strata serves
+   beyond loopback only with a key ([SECURITY.md](../SECURITY.md)), so the entry point stops without one. Publish to
+   `127.0.0.1` so only this PC can use it, or to `0.0.0.0` if other devices need it.
 
    The setup choices are env vars: `-e MODEL=IQ2_XS -e FAMILY=qwen -e CONTEXT=32768 -e VISION=no`
    (or `MODEL=Q2_0|IQ3_XXS|IQ3_S`, `FAMILY=swift|coder`; the defaults above are the recommended ones).

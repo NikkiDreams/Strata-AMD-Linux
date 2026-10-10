@@ -1,5 +1,6 @@
 """docker-entrypoint.sh keeps the install config on the /data volume as the one that counts (#1244): with REINSTALL=0
 and a config on the volume, /opt/strata/strata-<tag>.json is a link to it, even when a regular file is already there.
+It also refuses to serve beyond loopback without an API key, which is what a published container port is.
 Runs the real script in a temporary tree with a stub for .venv/bin/python (POSIX sh and symlinks needed: skipped on
 Windows).
 
@@ -37,7 +38,9 @@ class Entrypoint(unittest.TestCase):
         self.script.write_text(script, encoding="utf-8")
 
     def run_entry(self, reinstall, **extra):
-        env = dict(os.environ, STRATA_DATA=str(self.data), MODEL="IQ3_S", REINSTALL=reinstall, **extra)
+        env = dict(os.environ, STRATA_DATA=str(self.data), MODEL="IQ3_S", REINSTALL=reinstall)
+        env.setdefault("API_KEY", "test-key")            # an open host needs a key now; the refusal tests pass ""
+        env.update(extra)
         r = subprocess.run([SH, str(self.script)], env=env, capture_output=True, text=True, timeout=60)
         self.assertEqual(r.returncode, 0, r.stderr)
         return r.stdout
@@ -95,11 +98,28 @@ class Entrypoint(unittest.TestCase):
         self.assertIn("by-model", out)
         self.assertIn(f"Config: {self.data}/config/strata-iq3_s.json", out)
 
+    def test_serving_beyond_loopback_without_a_key_is_refused(self):
+        env = dict(os.environ, STRATA_DATA=str(self.data), MODEL="IQ3_S", REINSTALL="0")
+        r = subprocess.run([SH, str(self.script)], env=env, capture_output=True, text=True, timeout=60)
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertIn("without an API key", r.stderr)
+        self.assertIn("0.0.0.0", r.stderr)              # the default HOST, which a published port reaches
+        self.assertNotIn("Setting up", r.stdout)        # stopped before the setup pass or the start
+
+    def test_a_key_lets_the_default_host_run(self):
+        (self.data / "config" / "strata-iq3_s.json").write_text('{"args": ["keyed"]}\n')
+        self.assertIn("keyed", self.run_entry("0", API_KEY="any string"))
+
+    def test_loopback_without_a_key_runs(self):
+        (self.data / "config" / "strata-iq3_s.json").write_text('{"args": ["local"]}\n')
+        self.assertIn("local", self.run_entry("0", API_KEY="", HOST="127.0.0.1"))
+
     def warning_for(self, flags):
         info = self.tmp / "cpuinfo"
         info.write_text(f"processor\t: 0\nflags\t\t: {flags}\n")
         (self.data / "config" / "strata-iq3_s.json").write_text('{"args": ["x"]}\n')
-        env = dict(os.environ, STRATA_DATA=str(self.data), MODEL="IQ3_S", REINSTALL="0", STRATA_CPUINFO=str(info))
+        env = dict(os.environ, STRATA_DATA=str(self.data), MODEL="IQ3_S", REINSTALL="0", STRATA_CPUINFO=str(info),
+                   API_KEY="test-key")
         r = subprocess.run([SH, str(self.script)], env=env, capture_output=True, text=True, timeout=60)
         self.assertEqual(r.returncode, 0, r.stderr)     # a warning, never a stop (#1584)
         return r.stderr

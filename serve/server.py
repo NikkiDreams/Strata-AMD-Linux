@@ -4461,6 +4461,16 @@ class BadBody(Exception):
         self.status = status
 
 
+# The web app's Content-Security-Policy.  The pages load only their own files (serve/web, same origin, no CDN), so
+# 'self' covers everything.  'unsafe-inline' is what the app still needs: one inline script that sets the theme
+# before the first paint (index.html), inline style attributes on its progress bars, one inline <style> in
+# monitor.html.  No inline event handler is used anywhere, so a script from another place still cannot run.
+# data: for the images the page's file picker reads, blob: for the download link it makes.
+CSP = ("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; "
+       "img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; object-src 'none'; "
+       "frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
+
+
 def make_handler(svc: Service):
     class Handler(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.0"                       # SSE ends by closing the connection
@@ -4800,6 +4810,7 @@ def make_handler(svc: Service):
                 body = (ROOT / "serve" / "web" / ("monitor.html" if path else "index.html")).read_bytes()
                 self.send_response(200)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Security-Policy", CSP)
                 self.send_header("Content-Length", str(len(body)))
                 self.end_headers()
                 self.wfile.write(body)

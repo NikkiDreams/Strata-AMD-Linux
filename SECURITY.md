@@ -40,5 +40,11 @@ this PC only. The details and every setting are in [docs/DETAILS.md](docs/DETAIL
   that ask for them. They run with your user's rights, and the model decides when to call them.
 - **The request monitor** (`/api-monitor`, which keeps the last prompts and answers in memory) is off unless
   `"api_monitor": true` is set.
+- **Content-Security-Policy** on the web app's pages: they load only their own files (same origin, no
+  CDN), cannot be put in a frame, and cannot run a script from another place. The app's own inline parts (the theme
+  script before the first paint, the progress bars' style attributes) are the only exceptions the policy allows.
+- **The container** (`docker-entrypoint.sh`): a published port reaches the server from outside the container, so the
+  entry point stops when `HOST` is outside loopback and `API_KEY` is empty. Set `API_KEY` (any string), or keep the
+  server on loopback.
 
 Strata has not had an outside security audit yet.
